@@ -1,0 +1,438 @@
+{
+  "config": {},
+  "obstacles": [],
+  "session_id": "session_c",
+  "ticks": [
+    {
+      "active_failures": [],
+      "ground_truth": {
+        "heading_deg": 0.0,
+        "x": 0.0,
+        "y": 0.0
+      },
+      "mcl_error": 0.0,
+      "observed_heading": 0.0,
+      "observed_readings": [
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      "odom_error": 0.0,
+      "post_predict": {
+        "estimate": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "n_eff": 0.0,
+        "particles": []
+      },
+      "post_resample": {
+        "estimate": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "n_eff": 0.0,
+        "particles": []
+      },
+      "post_update": {
+        "estimate": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "n_eff": 0.0,
+        "particles": []
+      },
+      "tick": 0,
+      "valid_sensor_count": 0
+    },
+    {
+      "active_failures": [],
+      "ground_truth": {
+        "heading_deg": 0.0,
+        "x": 0.0,
+        "y": 0.0
+      },
+      "mcl_error": 0.0,
+      "observed_heading": 0.0,
+      "observed_readings": [
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      "odom_error": 0.0,
+      "post_predict": {
+        "estimate": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "n_eff": 0.0,
+        "particles": []
+      },
+      "post_resample": {
+        "estimate": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "n_eff": 0.0,
+        "particles": []
+      },
+      "post_update": {
+        "estimate": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "n_eff": 0.0,
+        "particles": []
+      },
+      "tick": 1,
+      "valid_sensor_count": 0
+    },
+    {
+      "active_failures": [],
+      "ground_truth": {
+        "heading_deg": 0.0,
+        "x": 0.0,
+        "y": 0.0
+      },
+      "mcl_error": 0.0,
+      "observed_heading": 0.0,
+      "observed_readings": [
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      "odom_error": 0.0,
+      "post_predict": {
+        "estimate": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "n_eff": 0.0,
+        "particles": []
+      },
+      "post_resample": {
+        "estimate": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "n_eff": 0.0,
+        "particles": []
+      },
+      "post_update": {
+        "estimate": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "n_eff": 0.0,
+        "particles": []
+      },
+      "tick": 2,
+      "valid_sensor_count": 0
+    },
+    {
+      "active_failures": [],
+      "ground_truth": {
+        "heading_deg": 0.0,
+        "x": 0.0,
+        "y": 0.0
+      },
+      "mcl_error": 0.0,
+      "observed_heading": 0.0,
+      "observed_readings": [
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      "odom_error": 0.0,
+      "post_predict": {
+        "estimate": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "n_eff": 0.0,
+        "particles": []
+      },
+      "post_resample": {
+        "estimate": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "n_eff": 0.0,
+        "particles": []
+      },
+      "post_update": {
+        "estimate": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "n_eff": 0.0,
+        "particles": []
+      },
+      "tick": 3,
+      "valid_sensor_count": 0
+    },
+    {
+      "active_failures": [],
+      "ground_truth": {
+        "heading_deg": 0.0,
+        "x": 0.0,
+        "y": 0.0
+      },
+      "mcl_error": 0.0,
+      "observed_heading": 0.0,
+      "observed_readings": [
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      "odom_error": 0.0,
+      "post_predict": {
+        "estimate": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "n_eff": 0.0,
+        "particles": []
+      },
+      "post_resample": {
+        "estimate": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "n_eff": 0.0,
+        "particles": []
+      },
+      "post_update": {
+        "estimate": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "n_eff": 0.0,
+        "particles": []
+      },
+      "tick": 4,
+      "valid_sensor_count": 0
+    },
+    {
+      "active_failures": [],
+      "ground_truth": {
+        "heading_deg": 0.0,
+        "x": 0.0,
+        "y": 0.0
+      },
+      "mcl_error": 0.0,
+      "observed_heading": 0.0,
+      "observed_readings": [
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      "odom_error": 0.0,
+      "post_predict": {
+        "estimate": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "n_eff": 0.0,
+        "particles": []
+      },
+      "post_resample": {
+        "estimate": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "n_eff": 0.0,
+        "particles": []
+      },
+      "post_update": {
+        "estimate": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "n_eff": 0.0,
+        "particles": []
+      },
+      "tick": 5,
+      "valid_sensor_count": 0
+    },
+    {
+      "active_failures": [],
+      "ground_truth": {
+        "heading_deg": 0.0,
+        "x": 0.0,
+        "y": 0.0
+      },
+      "mcl_error": 0.0,
+      "observed_heading": 0.0,
+      "observed_readings": [
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      "odom_error": 0.0,
+      "post_predict": {
+        "estimate": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "n_eff": 0.0,
+        "particles": []
+      },
+      "post_resample": {
+        "estimate": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "n_eff": 0.0,
+        "particles": []
+      },
+      "post_update": {
+        "estimate": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "n_eff": 0.0,
+        "particles": []
+      },
+      "tick": 6,
+      "valid_sensor_count": 0
+    },
+    {
+      "active_failures": [],
+      "ground_truth": {
+        "heading_deg": 0.0,
+        "x": 0.0,
+        "y": 0.0
+      },
+      "mcl_error": 0.0,
+      "observed_heading": 0.0,
+      "observed_readings": [
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      "odom_error": 0.0,
+      "post_predict": {
+        "estimate": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "n_eff": 0.0,
+        "particles": []
+      },
+      "post_resample": {
+        "estimate": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "n_eff": 0.0,
+        "particles": []
+      },
+      "post_update": {
+        "estimate": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "n_eff": 0.0,
+        "particles": []
+      },
+      "tick": 7,
+      "valid_sensor_count": 0
+    },
+    {
+      "active_failures": [],
+      "ground_truth": {
+        "heading_deg": 0.0,
+        "x": 0.0,
+        "y": 0.0
+      },
+      "mcl_error": 0.0,
+      "observed_heading": 0.0,
+      "observed_readings": [
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      "odom_error": 0.0,
+      "post_predict": {
+        "estimate": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "n_eff": 0.0,
+        "particles": []
+      },
+      "post_resample": {
+        "estimate": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "n_eff": 0.0,
+        "particles": []
+      },
+      "post_update": {
+        "estimate": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "n_eff": 0.0,
+        "particles": []
+      },
+      "tick": 8,
+      "valid_sensor_count": 0
+    },
+    {
+      "active_failures": [],
+      "ground_truth": {
+        "heading_deg": 0.0,
+        "x": 0.0,
+        "y": 0.0
+      },
+      "mcl_error": 0.0,
+      "observed_heading": 0.0,
+      "observed_readings": [
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      "odom_error": 0.0,
+      "post_predict": {
+        "estimate": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "n_eff": 0.0,
+        "particles": []
+      },
+      "post_resample": {
+        "estimate": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "n_eff": 0.0,
+        "particles": []
+      },
+      "post_update": {
+        "estimate": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "n_eff": 0.0,
+        "particles": []
+      },
+      "tick": 9,
+      "valid_sensor_count": 0
+    }
+  ],
+  "total_ticks": 10
+}

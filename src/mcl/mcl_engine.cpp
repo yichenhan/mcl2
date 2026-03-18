@@ -28,10 +28,41 @@ void MCLEngine::initialize_uniform(uint64_t seed) {
     }
 }
 
-void MCLEngine::predict(double delta_forward, double /*delta_rotation*/, double /*heading_deg*/) {
-    // Phase 2: no-op when delta is zero (stationary robot)
-    if (std::fabs(delta_forward) < 1e-9) return;
-    // Movement prediction will be implemented in Phase 3
+void MCLEngine::predict(double delta_forward, double delta_rotation, double heading_deg) {
+    predict(delta_forward, delta_rotation, heading_deg, 0.0);
+}
+
+void MCLEngine::predict(double delta_forward,
+                        double /*delta_rotation*/,
+                        double heading_deg,
+                        double delta_lateral) {
+    if (std::fabs(delta_forward) < 1e-9 && std::fabs(delta_lateral) < 1e-9) return;
+
+    // Noise scale follows traveled forward distance.
+    const double travel = std::fabs(delta_forward);
+    const double sigma_fwd = config_.predict_noise_fwd * travel;
+    const double sigma_lat = config_.predict_noise_lat * travel;
+
+    const double heading_rad = distance_loc::deg2rad(heading_deg);
+    const double s = std::sin(heading_rad);
+    const double c = std::cos(heading_rad);
+
+    std::normal_distribution<double> fwd_noise(0.0, sigma_fwd);
+    std::normal_distribution<double> lat_noise(0.0, sigma_lat);
+
+    for (auto& p : particles_) {
+        const double local_fwd = delta_forward + (sigma_fwd > 0.0 ? fwd_noise(rng_) : 0.0);
+        const double local_lat = delta_lateral + (sigma_lat > 0.0 ? lat_noise(rng_) : 0.0);
+
+        // Heading convention:
+        // 0 deg = +Y, CW positive.
+        // Forward vector  = (sin(h),  cos(h))
+        // Rightward vector = (cos(h), -sin(h))
+        const double dx = local_fwd * s + local_lat * c;
+        const double dy = local_fwd * c - local_lat * s;
+        p.x += static_cast<float>(dx);
+        p.y += static_cast<float>(dy);
+    }
 }
 
 void MCLEngine::update(const double readings[4], double heading_deg) {

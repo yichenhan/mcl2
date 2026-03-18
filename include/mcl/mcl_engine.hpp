@@ -21,6 +21,8 @@ struct MCLConfig {
     double resample_threshold = 0.5;
     double roughening_sigma = 1.5;  // post-resample jitter for convergence and particle diversity
     double field_half = 72.0;
+    double predict_noise_fwd = 0.0;  // per-particle forward noise fraction
+    double predict_noise_lat = 0.0;  // per-particle lateral noise fraction
 
     // Sensor mounts: left, right, front, back
     SensorMount sensors[4] = {
@@ -47,6 +49,7 @@ public:
 
     // Predict: move particles by odom delta (no-op when delta is zero)
     void predict(double delta_forward, double delta_rotation, double heading_deg);
+    void predict(double delta_forward, double delta_rotation, double heading_deg, double delta_lateral);
 
     // Update: score particles against sensor readings
     // readings[4]: left, right, front, back. -1 means invalid.

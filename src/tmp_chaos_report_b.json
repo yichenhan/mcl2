@@ -1,0 +1,26 @@
+{
+  "base_seed": 999,
+  "num_runs": 2,
+  "results": [
+    {
+      "convergence_tick": -1,
+      "final_mcl_error": 0.6326212947953175,
+      "final_odom_error": 0.45502402477489046,
+      "path_type": "random_walk",
+      "post_convergence_rms": 0.6326212947953175,
+      "run_id": 0,
+      "seed": 999,
+      "total_failures": 1
+    },
+    {
+      "convergence_tick": -1,
+      "final_mcl_error": 0.6109796644701877,
+      "final_odom_error": 0.33958199154584756,
+      "path_type": "wall_hugger",
+      "post_convergence_rms": 0.6109796644701877,
+      "run_id": 1,
+      "seed": 1000,
+      "total_failures": 0
+    }
+  ]
+}
