@@ -1,12 +1,14 @@
 CXX      := g++
 CXXFLAGS := -std=c++17 -O2 -Wall -Wextra -pedantic
-INCLUDES := -Iinclude -Ithird_party
+INCLUDES := -I../include -Iinclude -I../third_party -Ithird_party -I.
 
-# Phase 1 sources
-SRC := constants.cpp ray_wall.cpp distance_localization.cpp
+# Sources
+SRC := constants.cpp ray_wall.cpp distance_localization.cpp \
+       mcl/mcl_engine.cpp
 
 # Test sources
-TEST_SRC := tests/doctest_main.cpp tests/test_ray_cast.cpp
+TEST_SRC := ../tests/doctest_main.cpp ../tests/test_ray_cast.cpp \
+            ../tests/test_mcl_stationary.cpp
 
 # Object files
 OBJ      := $(SRC:.cpp=.o)
