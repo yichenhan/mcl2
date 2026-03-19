@@ -20,6 +20,13 @@ struct MCLConfig {
     double random_injection = 0.05;
     double resample_threshold = 0.5;
     double roughening_sigma = 1.5;  // post-resample jitter for convergence and particle diversity
+    // Force resampling for a short window after initialize_uniform() to
+    // improve global relocalization and re-init convergence.
+    int bootstrap_recovery_ticks = 12;
+    // When the average raw weight per particle drops below this threshold,
+    // all particles are lost.  Force resampling with higher injection.
+    double lost_weight_threshold = 1e-3;
+    double lost_random_injection = 0.15;
     double field_half = 72.0;
     double predict_noise_fwd = 0.0;  // per-particle forward noise fraction
     double predict_noise_lat = 0.0;  // per-particle lateral noise fraction
@@ -71,6 +78,8 @@ private:
     MCLConfig config_;
     std::vector<Particle> particles_;
     std::mt19937 rng_;
+    int bootstrap_ticks_left_ = 0;
+    double last_raw_weight_sum_ = 0.0;
 };
 
 } // namespace mcl

@@ -4,33 +4,36 @@
   "results": [
     {
       "convergence_tick": -1,
-      "final_mcl_error": 0.5064555274754651,
-      "final_odom_error": 0.2991216930407725,
-      "path_type": "spiral",
-      "post_convergence_rms": 0.5064555274754651,
-      "run_id": 2,
-      "seed": 125,
-      "total_failures": 0
-    },
-    {
-      "convergence_tick": -1,
-      "final_mcl_error": 0.4584335909807807,
+      "final_mcl_error": 0.6658640718538409,
       "final_odom_error": 0.30097214175780757,
       "path_type": "wall_hugger",
-      "post_convergence_rms": 0.4584335909807807,
+      "post_convergence_rms": 0.6658640718538409,
+      "replay_file": "chaos_run_1_seed_124.json",
       "run_id": 1,
       "seed": 124,
       "total_failures": 0
     },
     {
       "convergence_tick": -1,
-      "final_mcl_error": 0.45441373895532305,
+      "final_mcl_error": 0.41995072889074564,
       "final_odom_error": 0.11734110493396514,
       "path_type": "random_walk",
-      "post_convergence_rms": 0.45441373895532305,
+      "post_convergence_rms": 0.41995072889074564,
+      "replay_file": "chaos_run_0_seed_123.json",
       "run_id": 0,
       "seed": 123,
       "total_failures": 1
+    },
+    {
+      "convergence_tick": -1,
+      "final_mcl_error": 0.3926302510622856,
+      "final_odom_error": 0.2991216930407725,
+      "path_type": "spiral",
+      "post_convergence_rms": 0.3926302510622856,
+      "replay_file": "chaos_run_2_seed_125.json",
+      "run_id": 2,
+      "seed": 125,
+      "total_failures": 0
     }
   ]
 }

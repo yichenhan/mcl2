@@ -26,6 +26,9 @@ void MCLEngine::initialize_uniform(uint64_t seed) {
         p.y = dist_y(rng_);
         p.weight = w;
     }
+
+    // Fresh global relocalization bootstrap.
+    bootstrap_ticks_left_ = config_.bootstrap_recovery_ticks;
 }
 
 void MCLEngine::predict(double delta_forward, double delta_rotation, double heading_deg) {
@@ -81,6 +84,7 @@ void MCLEngine::update(const double readings[4], double heading_deg) {
     // If no sensors valid at all, set uniform weights
     bool any_valid = valid[0] || valid[1] || valid[2] || valid[3];
     if (!any_valid) {
+        last_raw_weight_sum_ = 1.0;
         float w = 1.0f / static_cast<float>(N);
         for (auto& p : particles_) {
             p.weight = w;
@@ -148,6 +152,8 @@ void MCLEngine::update(const double readings[4], double heading_deg) {
         weight_sum += p.weight;
     }
 
+    last_raw_weight_sum_ = weight_sum;
+
     // Normalize weights — fallback to uniform if all weights underflowed
     if (weight_sum > 1e-30) {
         float inv_sum = static_cast<float>(1.0 / weight_sum);
@@ -168,12 +174,26 @@ void MCLEngine::resample() {
     const int N = static_cast<int>(particles_.size());
     if (N == 0) return;
 
-    double neff = n_eff();
-    if (neff / N >= config_.resample_threshold) return;
+    double neff_ratio = n_eff() / N;
+    const bool bootstrap_active = (bootstrap_ticks_left_ > 0);
+    if (bootstrap_active) {
+        bootstrap_ticks_left_--;
+    }
+
+    const double avg_raw_weight = last_raw_weight_sum_ / N;
+    const bool filter_lost = (avg_raw_weight < config_.lost_weight_threshold);
+
+    const double active_threshold = (bootstrap_active || filter_lost)
+        ? 0.999999
+        : config_.resample_threshold;
+    if (neff_ratio >= active_threshold) return;
 
     // Low-variance resampling
     std::vector<Particle> new_particles;
-    int num_resampled = N - static_cast<int>(config_.random_injection * N);
+    const double injection = filter_lost
+        ? std::max(config_.random_injection, config_.lost_random_injection)
+        : config_.random_injection;
+    int num_resampled = N - static_cast<int>(injection * N);
     if (num_resampled < 1) num_resampled = 1;
     int num_random = N - num_resampled;
 
