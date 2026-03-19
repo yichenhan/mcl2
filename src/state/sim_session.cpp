@@ -6,10 +6,6 @@
 
 namespace state {
 
-namespace {
-constexpr double kEps = 1e-12;
-}
-
 SimSession::SimSession(const SimSessionConfig& config)
     : config_(config),
       physics_(config_.field, config_.physics_config),

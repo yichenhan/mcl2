@@ -8,6 +8,8 @@ int main(int argc, char** argv) {
     if (argc >= 2) cfg.num_runs = std::atoi(argv[1]);
     if (argc >= 3) cfg.base_seed = static_cast<uint64_t>(std::strtoull(argv[2], nullptr, 10));
     if (argc >= 4) cfg.output_report_path = argv[3];
+    if (argc >= 5) cfg.replay_output_dir = argv[4];
+    if (argc >= 6) cfg.save_top_n = std::atoi(argv[5]);
 
     chaos::ChaosRunner runner(cfg);
     const auto results = runner.run_all();
