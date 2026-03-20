@@ -1,0 +1,68 @@
+{
+  "name": "u_turn_gauntlet",
+  "description": "Alternating long straights and quick reversals",
+  "waypoints": [
+    {
+      "x": 0,
+      "y": -48
+    },
+    {
+      "x": 0,
+      "y": 48
+    },
+    {
+      "x": 18,
+      "y": 48
+    },
+    {
+      "x": 18,
+      "y": -48
+    },
+    {
+      "x": -18,
+      "y": -48
+    },
+    {
+      "x": -18,
+      "y": 48
+    },
+    {
+      "x": 0,
+      "y": 0
+    }
+  ],
+  "obstacles": [],
+  "initial_heading_deg": 0,
+  "pure_pursuit": {
+    "lookahead_distance": 10.0,
+    "linear_velocity": 26.0,
+    "waypoint_tolerance": 3.0,
+    "max_angular_velocity_deg": 260.0
+  },
+  "failure_seed": 47,
+  "failure_config": {
+    "sensor_dead_prob": 0.01,
+    "sensor_stuck_prob": 0.008,
+    "odom_spike_prob": 0.01,
+    "heading_bias_prob": 0.01,
+    "spurious_reflection_prob": 0.002,
+    "kidnap_prob": 0.0,
+    "min_duration_ticks": 6,
+    "max_duration_ticks": 16,
+    "odom_spike_range": [
+      2.2,
+      5.0
+    ],
+    "heading_bias_range": [
+      -20.0,
+      20.0
+    ],
+    "spurious_reflection_range": [
+      2.0,
+      10.0
+    ]
+  },
+  "kidnap_events": [],
+  "max_ticks": 620,
+  "max_estimate_speed_ft_per_s": 6.0
+}

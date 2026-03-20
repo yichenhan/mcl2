@@ -19,13 +19,16 @@
         -1.0
       ],
       "odom_error": 0.0,
+      "pose_gated": false,
       "post_predict": {
         "estimate": {
           "x": 0.0,
           "y": 0.0
         },
         "n_eff": 0.0,
-        "particles": []
+        "particles": [],
+        "radius_90": 0.0,
+        "spread": 0.0
       },
       "post_resample": {
         "estimate": {
@@ -33,7 +36,9 @@
           "y": 0.0
         },
         "n_eff": 0.0,
-        "particles": []
+        "particles": [],
+        "radius_90": 0.0,
+        "spread": 0.0
       },
       "post_update": {
         "estimate": {
@@ -41,9 +46,12 @@
           "y": 0.0
         },
         "n_eff": 0.0,
-        "particles": []
+        "particles": [],
+        "radius_90": 0.0,
+        "spread": 0.0
       },
       "tick": 0,
+      "update_skipped": false,
       "valid_sensor_count": 0
     },
     {
@@ -62,13 +70,16 @@
         -1.0
       ],
       "odom_error": 0.0,
+      "pose_gated": false,
       "post_predict": {
         "estimate": {
           "x": 0.0,
           "y": 0.0
         },
         "n_eff": 0.0,
-        "particles": []
+        "particles": [],
+        "radius_90": 0.0,
+        "spread": 0.0
       },
       "post_resample": {
         "estimate": {
@@ -76,7 +87,9 @@
           "y": 0.0
         },
         "n_eff": 0.0,
-        "particles": []
+        "particles": [],
+        "radius_90": 0.0,
+        "spread": 0.0
       },
       "post_update": {
         "estimate": {
@@ -84,9 +97,12 @@
           "y": 0.0
         },
         "n_eff": 0.0,
-        "particles": []
+        "particles": [],
+        "radius_90": 0.0,
+        "spread": 0.0
       },
       "tick": 1,
+      "update_skipped": false,
       "valid_sensor_count": 0
     },
     {
@@ -105,13 +121,16 @@
         -1.0
       ],
       "odom_error": 0.0,
+      "pose_gated": false,
       "post_predict": {
         "estimate": {
           "x": 0.0,
           "y": 0.0
         },
         "n_eff": 0.0,
-        "particles": []
+        "particles": [],
+        "radius_90": 0.0,
+        "spread": 0.0
       },
       "post_resample": {
         "estimate": {
@@ -119,7 +138,9 @@
           "y": 0.0
         },
         "n_eff": 0.0,
-        "particles": []
+        "particles": [],
+        "radius_90": 0.0,
+        "spread": 0.0
       },
       "post_update": {
         "estimate": {
@@ -127,9 +148,12 @@
           "y": 0.0
         },
         "n_eff": 0.0,
-        "particles": []
+        "particles": [],
+        "radius_90": 0.0,
+        "spread": 0.0
       },
       "tick": 2,
+      "update_skipped": false,
       "valid_sensor_count": 0
     },
     {
@@ -148,13 +172,16 @@
         -1.0
       ],
       "odom_error": 0.0,
+      "pose_gated": false,
       "post_predict": {
         "estimate": {
           "x": 0.0,
           "y": 0.0
         },
         "n_eff": 0.0,
-        "particles": []
+        "particles": [],
+        "radius_90": 0.0,
+        "spread": 0.0
       },
       "post_resample": {
         "estimate": {
@@ -162,7 +189,9 @@
           "y": 0.0
         },
         "n_eff": 0.0,
-        "particles": []
+        "particles": [],
+        "radius_90": 0.0,
+        "spread": 0.0
       },
       "post_update": {
         "estimate": {
@@ -170,9 +199,12 @@
           "y": 0.0
         },
         "n_eff": 0.0,
-        "particles": []
+        "particles": [],
+        "radius_90": 0.0,
+        "spread": 0.0
       },
       "tick": 3,
+      "update_skipped": false,
       "valid_sensor_count": 0
     },
     {
@@ -191,13 +223,16 @@
         -1.0
       ],
       "odom_error": 0.0,
+      "pose_gated": false,
       "post_predict": {
         "estimate": {
           "x": 0.0,
           "y": 0.0
         },
         "n_eff": 0.0,
-        "particles": []
+        "particles": [],
+        "radius_90": 0.0,
+        "spread": 0.0
       },
       "post_resample": {
         "estimate": {
@@ -205,7 +240,9 @@
           "y": 0.0
         },
         "n_eff": 0.0,
-        "particles": []
+        "particles": [],
+        "radius_90": 0.0,
+        "spread": 0.0
       },
       "post_update": {
         "estimate": {
@@ -213,9 +250,12 @@
           "y": 0.0
         },
         "n_eff": 0.0,
-        "particles": []
+        "particles": [],
+        "radius_90": 0.0,
+        "spread": 0.0
       },
       "tick": 4,
+      "update_skipped": false,
       "valid_sensor_count": 0
     },
     {
@@ -234,13 +274,16 @@
         -1.0
       ],
       "odom_error": 0.0,
+      "pose_gated": false,
       "post_predict": {
         "estimate": {
           "x": 0.0,
           "y": 0.0
         },
         "n_eff": 0.0,
-        "particles": []
+        "particles": [],
+        "radius_90": 0.0,
+        "spread": 0.0
       },
       "post_resample": {
         "estimate": {
@@ -248,7 +291,9 @@
           "y": 0.0
         },
         "n_eff": 0.0,
-        "particles": []
+        "particles": [],
+        "radius_90": 0.0,
+        "spread": 0.0
       },
       "post_update": {
         "estimate": {
@@ -256,9 +301,12 @@
           "y": 0.0
         },
         "n_eff": 0.0,
-        "particles": []
+        "particles": [],
+        "radius_90": 0.0,
+        "spread": 0.0
       },
       "tick": 5,
+      "update_skipped": false,
       "valid_sensor_count": 0
     },
     {
@@ -277,13 +325,16 @@
         -1.0
       ],
       "odom_error": 0.0,
+      "pose_gated": false,
       "post_predict": {
         "estimate": {
           "x": 0.0,
           "y": 0.0
         },
         "n_eff": 0.0,
-        "particles": []
+        "particles": [],
+        "radius_90": 0.0,
+        "spread": 0.0
       },
       "post_resample": {
         "estimate": {
@@ -291,7 +342,9 @@
           "y": 0.0
         },
         "n_eff": 0.0,
-        "particles": []
+        "particles": [],
+        "radius_90": 0.0,
+        "spread": 0.0
       },
       "post_update": {
         "estimate": {
@@ -299,9 +352,12 @@
           "y": 0.0
         },
         "n_eff": 0.0,
-        "particles": []
+        "particles": [],
+        "radius_90": 0.0,
+        "spread": 0.0
       },
       "tick": 6,
+      "update_skipped": false,
       "valid_sensor_count": 0
     },
     {
@@ -320,13 +376,16 @@
         -1.0
       ],
       "odom_error": 0.0,
+      "pose_gated": false,
       "post_predict": {
         "estimate": {
           "x": 0.0,
           "y": 0.0
         },
         "n_eff": 0.0,
-        "particles": []
+        "particles": [],
+        "radius_90": 0.0,
+        "spread": 0.0
       },
       "post_resample": {
         "estimate": {
@@ -334,7 +393,9 @@
           "y": 0.0
         },
         "n_eff": 0.0,
-        "particles": []
+        "particles": [],
+        "radius_90": 0.0,
+        "spread": 0.0
       },
       "post_update": {
         "estimate": {
@@ -342,9 +403,12 @@
           "y": 0.0
         },
         "n_eff": 0.0,
-        "particles": []
+        "particles": [],
+        "radius_90": 0.0,
+        "spread": 0.0
       },
       "tick": 7,
+      "update_skipped": false,
       "valid_sensor_count": 0
     },
     {
@@ -363,13 +427,16 @@
         -1.0
       ],
       "odom_error": 0.0,
+      "pose_gated": false,
       "post_predict": {
         "estimate": {
           "x": 0.0,
           "y": 0.0
         },
         "n_eff": 0.0,
-        "particles": []
+        "particles": [],
+        "radius_90": 0.0,
+        "spread": 0.0
       },
       "post_resample": {
         "estimate": {
@@ -377,7 +444,9 @@
           "y": 0.0
         },
         "n_eff": 0.0,
-        "particles": []
+        "particles": [],
+        "radius_90": 0.0,
+        "spread": 0.0
       },
       "post_update": {
         "estimate": {
@@ -385,9 +454,12 @@
           "y": 0.0
         },
         "n_eff": 0.0,
-        "particles": []
+        "particles": [],
+        "radius_90": 0.0,
+        "spread": 0.0
       },
       "tick": 8,
+      "update_skipped": false,
       "valid_sensor_count": 0
     },
     {
@@ -406,13 +478,16 @@
         -1.0
       ],
       "odom_error": 0.0,
+      "pose_gated": false,
       "post_predict": {
         "estimate": {
           "x": 0.0,
           "y": 0.0
         },
         "n_eff": 0.0,
-        "particles": []
+        "particles": [],
+        "radius_90": 0.0,
+        "spread": 0.0
       },
       "post_resample": {
         "estimate": {
@@ -420,7 +495,9 @@
           "y": 0.0
         },
         "n_eff": 0.0,
-        "particles": []
+        "particles": [],
+        "radius_90": 0.0,
+        "spread": 0.0
       },
       "post_update": {
         "estimate": {
@@ -428,9 +505,12 @@
           "y": 0.0
         },
         "n_eff": 0.0,
-        "particles": []
+        "particles": [],
+        "radius_90": 0.0,
+        "spread": 0.0
       },
       "tick": 9,
+      "update_skipped": false,
       "valid_sensor_count": 0
     }
   ],

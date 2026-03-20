@@ -56,6 +56,14 @@ void FailureInjector::apply(
             case FailureType::HeadingBias:
                 heading_deg += e.param;
                 break;
+            case FailureType::SpuriousReflection:
+                if (e.sensor_idx >= 0 && e.sensor_idx < static_cast<int>(readings.size())) {
+                    readings[static_cast<size_t>(e.sensor_idx)] = e.param;
+                }
+                break;
+            case FailureType::Kidnap:
+                // Handled by pending_kidnap() in SimSession tick orchestration.
+                break;
         }
     }
 
@@ -72,6 +80,19 @@ void FailureInjector::apply(
             stuck_values_[static_cast<size_t>(i)] = kInvalidReading;
         }
     }
+}
+
+std::optional<sim::RobotState> FailureInjector::pending_kidnap(int tick) const {
+    for (const auto& e : events_) {
+        if (e.type != FailureType::Kidnap) continue;
+        if (e.start_tick != tick) continue;
+        sim::RobotState target{};
+        target.x = e.target_x;
+        target.y = e.target_y;
+        target.heading_deg = 0.0;
+        return target;
+    }
+    return std::nullopt;
 }
 
 std::vector<std::string> FailureInjector::active_failures(int tick) const {
@@ -93,8 +114,17 @@ std::vector<std::string> FailureInjector::active_failures(int tick) const {
             case FailureType::HeadingBias:
                 ss << "heading_bias";
                 break;
+            case FailureType::Kidnap:
+                ss << "kidnap";
+                break;
+            case FailureType::SpuriousReflection:
+                ss << "spurious_reflection";
+                break;
         }
         if (e.sensor_idx >= 0) ss << " sensor=" << e.sensor_idx;
+        if (e.type == FailureType::Kidnap) {
+            ss << " target_x=" << e.target_x << " target_y=" << e.target_y;
+        }
         ss << " param=" << e.param;
         out.push_back(ss.str());
     }

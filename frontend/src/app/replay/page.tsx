@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { FieldCanvas } from "@/components/FieldCanvas";
+import { FailureOverlay } from "@/components/FailureOverlay";
+import { FailureTimeline } from "@/components/FailureTimeline";
 import { MetricsPanel } from "@/components/MetricsPanel";
 import { StageStepper, type Stage } from "@/components/StageStepper";
 import { useReplay } from "@/hooks/useReplay";
@@ -11,6 +13,14 @@ import { useReplay } from "@/hooks/useReplay";
 export default function ReplayPage() {
   const replay = useReplay();
   const [stage, setStage] = useState<Stage>("post_resample");
+
+  useEffect(() => {
+    const requested = new URLSearchParams(window.location.search).get("file");
+    if (!requested) return;
+    if (!replay.files.includes(requested)) return;
+    if (replay.selected === requested) return;
+    replay.setSelected(requested);
+  }, [replay]);
 
   return (
     <main className="flex min-h-screen flex-col bg-zinc-950 p-4 text-zinc-100">
@@ -40,7 +50,13 @@ export default function ReplayPage() {
         <FieldCanvas
           tick={replay.currentTick}
           stage={stage}
-          obstacles={[]}
+          obstacles={replay.replayObstacles}
+          waypoints={replay.replayWaypoints}
+          prevGroundTruth={
+            replay.cursor > 0
+              ? replay.allLoadedTicks[replay.cursor - 1]?.ground_truth ?? null
+              : null
+          }
           className="h-[72vh] w-full rounded border border-zinc-700"
         />
         <aside className="space-y-3">
@@ -92,9 +108,17 @@ export default function ReplayPage() {
             <div className="mt-1 text-xs text-zinc-400">
               Tick {replay.cursor} / {Math.max(0, replay.totalTicks - 1)}
             </div>
+            <div className="mt-2">
+              <FailureTimeline
+                ticks={replay.allLoadedTicks}
+                cursor={replay.cursor}
+                onJump={replay.setCursor}
+              />
+            </div>
           </div>
           <StageStepper stage={stage} onStageChange={setStage} />
           <MetricsPanel tick={replay.currentTick} />
+          <FailureOverlay tick={replay.currentTick} />
         </aside>
       </div>
     </main>

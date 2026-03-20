@@ -15,6 +15,8 @@ struct MCLSnapshot {
     std::vector<mcl::Particle> particles;
     mcl::Estimate estimate{ 0.0f, 0.0f };
     double n_eff = 0.0;
+    double spread = 0.0;
+    double radius_90 = 0.0;
 };
 
 struct TickState {
@@ -31,6 +33,8 @@ struct TickState {
     double mcl_error = 0.0;
     double odom_error = 0.0;
     int valid_sensor_count = 0;
+    bool update_skipped = false;
+    bool pose_gated = false;
 };
 
 inline void to_json(nlohmann::json& j, const MCLSnapshot& s) {
@@ -48,6 +52,8 @@ inline void to_json(nlohmann::json& j, const MCLSnapshot& s) {
         { "y", s.estimate.y },
     };
     j["n_eff"] = s.n_eff;
+    j["spread"] = s.spread;
+    j["radius_90"] = s.radius_90;
 }
 
 inline void from_json(const nlohmann::json& j, MCLSnapshot& s) {
@@ -63,6 +69,8 @@ inline void from_json(const nlohmann::json& j, MCLSnapshot& s) {
     s.estimate.x = est.at("x").get<float>();
     s.estimate.y = est.at("y").get<float>();
     s.n_eff = j.at("n_eff").get<double>();
+    if (j.contains("spread")) s.spread = j.at("spread").get<double>();
+    if (j.contains("radius_90")) s.radius_90 = j.at("radius_90").get<double>();
 }
 
 inline void to_json(nlohmann::json& j, const TickState& t) {
@@ -82,6 +90,8 @@ inline void to_json(nlohmann::json& j, const TickState& t) {
     j["mcl_error"] = t.mcl_error;
     j["odom_error"] = t.odom_error;
     j["valid_sensor_count"] = t.valid_sensor_count;
+    j["update_skipped"] = t.update_skipped;
+    j["pose_gated"] = t.pose_gated;
 }
 
 inline void from_json(const nlohmann::json& j, TickState& t) {
@@ -99,6 +109,10 @@ inline void from_json(const nlohmann::json& j, TickState& t) {
     t.mcl_error = j.at("mcl_error").get<double>();
     t.odom_error = j.at("odom_error").get<double>();
     t.valid_sensor_count = j.at("valid_sensor_count").get<int>();
+    if (j.contains("update_skipped"))
+        t.update_skipped = j.at("update_skipped").get<bool>();
+    if (j.contains("pose_gated"))
+        t.pose_gated = j.at("pose_gated").get<bool>();
 }
 
 } // namespace state

@@ -33,6 +33,7 @@ class Physics {
 public:
     Physics(const Field& field, const PhysicsConfig& config = {});
     StepResult step(Action action);
+    StepResult step_continuous(double linear_vel, double angular_vel_deg);
     const RobotState& state() const;
     void set_state(const RobotState& s);
 private:

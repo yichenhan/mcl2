@@ -48,6 +48,12 @@ struct Estimate {
     float y;
 };
 
+struct ClusterStats {
+    double spread;          // weighted RMS distance from centroid (inches)
+    double radius_90;       // radius containing 90% of weighted mass (inches)
+    Estimate centroid;      // weighted mean position
+};
+
 class MCLEngine {
 public:
     explicit MCLEngine(const MCLConfig& config = {});
@@ -68,11 +74,17 @@ public:
     // Weighted mean position estimate
     Estimate estimate() const;
 
+    // Particle cloud clustering statistics.
+    // spread = weighted RMS distance from centroid.
+    // radius_90 = smallest radius around the centroid enclosing 90% of weighted mass.
+    ClusterStats cluster_stats() const;
+
     // Effective sample size
     double n_eff() const;
 
     // Access particles (for tests)
     const std::vector<Particle>& particles() const;
+    const MCLConfig& config() const;
 
 private:
     MCLConfig config_;

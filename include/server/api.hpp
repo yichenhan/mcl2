@@ -24,6 +24,7 @@ private:
 
     int port_;
     std::string replay_dir_;
+    std::string route_dir_ = "../routes";
     httplib::Server server_;
     std::mutex mutex_;
     int next_session_id_ = 1;

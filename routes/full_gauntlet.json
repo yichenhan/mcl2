@@ -1,0 +1,105 @@
+{
+  "name": "full_gauntlet",
+  "description": "Combined obstacles, kidnaps, and aggressive failures",
+  "waypoints": [
+    {
+      "x": 0,
+      "y": -56
+    },
+    {
+      "x": -30,
+      "y": -34
+    },
+    {
+      "x": 6,
+      "y": -10
+    },
+    {
+      "x": -24,
+      "y": 8
+    },
+    {
+      "x": 28,
+      "y": 24
+    },
+    {
+      "x": -18,
+      "y": 46
+    },
+    {
+      "x": 0,
+      "y": 56
+    }
+  ],
+  "obstacles": [
+    {
+      "min_x": -12,
+      "min_y": -42,
+      "max_x": 2,
+      "max_y": -24
+    },
+    {
+      "min_x": 8,
+      "min_y": -10,
+      "max_x": 22,
+      "max_y": 6
+    },
+    {
+      "min_x": -30,
+      "min_y": 18,
+      "max_x": -12,
+      "max_y": 34
+    },
+    {
+      "min_x": 10,
+      "min_y": 34,
+      "max_x": 28,
+      "max_y": 46
+    }
+  ],
+  "initial_heading_deg": 0,
+  "pure_pursuit": {
+    "lookahead_distance": 9.0,
+    "linear_velocity": 24.0,
+    "waypoint_tolerance": 2.5,
+    "max_angular_velocity_deg": 260.0
+  },
+  "failure_seed": 51,
+  "failure_config": {
+    "sensor_dead_prob": 0.016,
+    "sensor_stuck_prob": 0.014,
+    "odom_spike_prob": 0.012,
+    "heading_bias_prob": 0.012,
+    "spurious_reflection_prob": 0.003,
+    "kidnap_prob": 0.003,
+    "min_duration_ticks": 6,
+    "max_duration_ticks": 24,
+    "odom_spike_range": [
+      2.0,
+      5.0
+    ],
+    "heading_bias_range": [
+      -22.0,
+      22.0
+    ],
+    "spurious_reflection_range": [
+      2.0,
+      12.0
+    ]
+  },
+  "kidnap_events": [
+    {
+      "tick": 150,
+      "target": {
+        "x": -44,
+        "y": -44
+      }
+    },
+    {
+      "tick": 320,
+      "target": "random"
+    }
+  ],
+  "max_ticks": 760,
+  "max_estimate_speed_ft_per_s": 6.0
+}

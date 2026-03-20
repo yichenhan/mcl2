@@ -10,7 +10,7 @@ SimSession::SimSession(const SimSessionConfig& config)
     : config_(config),
       physics_(config_.field, config_.physics_config),
       sensor_model_(config_.seed, config_.odom_noise_config, config_.sensor_noise_config),
-      mcl_(config_.mcl_config) {
+      mcl_(config_.mcl_config, config_.mcl_gate_config) {
     physics_.set_state(config_.initial_state);
     odom_state_ = physics_.state();
     mcl_.initialize_uniform(config_.seed);
@@ -47,13 +47,39 @@ std::array<double, 4> SimSession::read_sensors(const sim::RobotState& s) {
 MCLSnapshot SimSession::snapshot_from_mcl() const {
     MCLSnapshot snap;
     snap.particles = mcl_.particles();
-    snap.estimate = mcl_.estimate();
+    const auto cs = mcl_.cluster_stats();
+    snap.estimate = cs.centroid;
     snap.n_eff = mcl_.n_eff();
+    snap.spread = cs.spread;
+    snap.radius_90 = cs.radius_90;
     return snap;
 }
 
+mcl::GateDecision SimSession::gate_estimate_for_control(
+    const mcl::Estimate& prev_accepted,
+    const TickState& tick) const {
+    return mcl_.gate_estimate(
+        config_.field,
+        tick.observed_readings,
+        tick.observed_heading,
+        prev_accepted,
+        config_.physics_config.dt);
+}
+
 TickState SimSession::tick(sim::Action action) {
-    const sim::StepResult step = physics_.step(action);
+    return process_step(physics_.step(action));
+}
+
+TickState SimSession::tick(double linear_vel, double angular_vel_deg) {
+    return process_step(physics_.step_continuous(linear_vel, angular_vel_deg));
+}
+
+TickState SimSession::process_step(const sim::StepResult& step) {
+    auto kidnap_target = failure_injector_.pending_kidnap(tick_);
+    if (kidnap_target.has_value()) {
+        kidnap_target->heading_deg = physics_.state().heading_deg;
+        physics_.set_state(*kidnap_target);
+    }
     const sim::RobotState truth = physics_.state();
 
     sim::MotionDelta stalled = sensor_model_.apply_collision_stall(step.delta, step.colliding);
@@ -75,16 +101,20 @@ TickState SimSession::tick(sim::Action action) {
     mcl_.predict(noisy_odom.forward_in, noisy_odom.rotation_deg, observed_heading, noisy_odom.lateral_in);
     MCLSnapshot post_predict = snapshot_from_mcl();
 
-    mcl_.update(readings.data(), observed_heading);
-    MCLSnapshot post_update = snapshot_from_mcl();
-
-    mcl_.resample();
-    MCLSnapshot post_resample = snapshot_from_mcl();
-
     int valid_count = 0;
     for (double r : readings) {
         if (r >= 0.0) valid_count++;
     }
+
+    const bool skip_update = (valid_count < config_.min_sensors_for_update);
+
+    if (!skip_update) {
+        mcl_.update(readings.data(), observed_heading);
+    }
+    MCLSnapshot post_update = snapshot_from_mcl();
+
+    mcl_.resample();
+    MCLSnapshot post_resample = snapshot_from_mcl();
 
     TickState out;
     out.tick = tick_;
@@ -98,6 +128,8 @@ TickState SimSession::tick(sim::Action action) {
     out.mcl_error = euclidean(out.post_resample.estimate.x, out.post_resample.estimate.y, truth.x, truth.y);
     out.odom_error = euclidean(odom_state_.x, odom_state_.y, truth.x, truth.y);
     out.valid_sensor_count = valid_count;
+    out.update_skipped = skip_update;
+    out.pose_gated = (out.post_resample.radius_90 > config_.pose_gate_radius_90);
 
     history_.push_back(out);
     tick_++;

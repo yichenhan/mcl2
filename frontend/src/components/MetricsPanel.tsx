@@ -33,7 +33,30 @@ export function MetricsPanel({ tick }: Props) {
         <span>N eff</span>
         <span>{formatNumber(tick.post_resample.n_eff)}</span>
         <span>Valid sensors</span>
-        <span>{tick.valid_sensor_count}</span>
+        <span
+          className={
+            tick.valid_sensor_count === 0
+              ? "font-semibold text-red-400"
+              : tick.valid_sensor_count < 4
+                ? "text-amber-300"
+                : ""
+          }
+        >
+          {tick.valid_sensor_count}
+          {tick.valid_sensor_count === 0 ? " (BLIND)" : ""}
+        </span>
+        <span>Active failures</span>
+        <span
+          className={
+            tick.active_failures.length === 0
+              ? "text-emerald-700"
+              : tick.active_failures.some((f) => f.includes("kidnap"))
+                ? "text-red-300"
+                : "text-amber-300"
+          }
+        >
+          {tick.active_failures.length}
+        </span>
       </div>
       {tick.active_failures.length > 0 ? (
         <div className="mt-2 text-xs text-amber-300">

@@ -3,6 +3,7 @@
 #include "sim/physics.hpp"
 
 #include <array>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -13,6 +14,8 @@ enum class FailureType {
     SensorStuck,
     OdomSpike,
     HeadingBias,
+    Kidnap,
+    SpuriousReflection,
 };
 
 struct FailureEvent {
@@ -21,6 +24,8 @@ struct FailureEvent {
     FailureType type = FailureType::SensorDead;
     int sensor_idx = -1;
     double param = 0.0;
+    double target_x = 0.0;
+    double target_y = 0.0;
 };
 
 class FailureInjector {
@@ -34,6 +39,7 @@ public:
         sim::MotionDelta& odom_delta,
         double& heading_deg
     );
+    std::optional<sim::RobotState> pending_kidnap(int tick) const;
 
     std::vector<std::string> active_failures(int tick) const;
 

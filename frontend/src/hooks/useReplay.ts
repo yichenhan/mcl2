@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { api } from "@/lib/api";
-import type { TickState } from "@/lib/types";
+import type { AABB, TickState, Waypoint } from "@/lib/types";
 
 const CHUNK_SIZE = 50;
 
@@ -95,6 +95,30 @@ export function useReplay() {
     return cache.get(chunkIdx)?.[inChunk] ?? null;
   }, [cache, cursor]);
 
+  const allLoadedTicks = useMemo(() => {
+    const keys = [...cache.keys()].sort((a, b) => a - b);
+    const out: TickState[] = [];
+    for (const k of keys) {
+      const chunk = cache.get(k);
+      if (chunk) out.push(...chunk);
+    }
+    return out;
+  }, [cache]);
+
+  const replayObstacles = useMemo(() => {
+    if (!meta) return [] as AABB[];
+    const v = meta.obstacles;
+    return Array.isArray(v) ? (v as AABB[]) : [];
+  }, [meta]);
+
+  const replayWaypoints = useMemo(() => {
+    if (!meta) return [] as Waypoint[];
+    const cfg = meta.config as Record<string, unknown> | undefined;
+    if (!cfg) return [] as Waypoint[];
+    const w = cfg.waypoints;
+    return Array.isArray(w) ? (w as Waypoint[]) : [];
+  }, [meta]);
+
   return {
     files,
     selected,
@@ -109,5 +133,8 @@ export function useReplay() {
     speed,
     setSpeed,
     refreshList,
+    allLoadedTicks,
+    replayObstacles,
+    replayWaypoints,
   };
 }

@@ -15,25 +15,25 @@
     },
     {
       "convergence_tick": -1,
-      "final_mcl_error": 0.41995072889074564,
-      "final_odom_error": 0.11734110493396514,
-      "path_type": "random_walk",
-      "post_convergence_rms": 0.41995072889074564,
-      "replay_file": "chaos_run_0_seed_123.json",
-      "run_id": 0,
-      "seed": 123,
-      "total_failures": 1
-    },
-    {
-      "convergence_tick": -1,
-      "final_mcl_error": 0.3926302510622856,
+      "final_mcl_error": 0.3450176443427449,
       "final_odom_error": 0.2991216930407725,
       "path_type": "spiral",
-      "post_convergence_rms": 0.3926302510622856,
+      "post_convergence_rms": 0.3450176443427449,
       "replay_file": "chaos_run_2_seed_125.json",
       "run_id": 2,
       "seed": 125,
       "total_failures": 0
+    },
+    {
+      "convergence_tick": -1,
+      "final_mcl_error": 0.25292991497834616,
+      "final_odom_error": 0.11734110493396514,
+      "path_type": "random_walk",
+      "post_convergence_rms": 0.25292991497834616,
+      "replay_file": "chaos_run_0_seed_123.json",
+      "run_id": 0,
+      "seed": 123,
+      "total_failures": 1
     }
   ]
 }

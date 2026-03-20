@@ -15,23 +15,17 @@ double wrap_heading(double deg) {
 Physics::Physics(const Field& field, const PhysicsConfig& config)
     : field_(field), config_(config), state_{} {}
 
-StepResult Physics::step(Action action) {
+StepResult Physics::step_continuous(double linear_vel, double angular_vel_deg) {
     StepResult result{};
 
-    if (action == Action::NONE) {
-        return result;
-    }
+    const double clamped_linear = std::max(-config_.max_velocity, std::min(config_.max_velocity, linear_vel));
+    const double clamped_angular = std::max(-config_.max_angular_vel, std::min(config_.max_angular_vel, angular_vel_deg));
 
-    const double rot_step = config_.max_angular_vel * config_.dt;
-    if (action == Action::ROTATE_CW || action == Action::ROTATE_CCW) {
-        const double delta_rot = (action == Action::ROTATE_CW) ? rot_step : -rot_step;
-        state_.heading_deg = wrap_heading(state_.heading_deg + delta_rot);
-        result.delta.rotation_deg = delta_rot;
-        return result;
-    }
+    const double delta_rot = clamped_angular * config_.dt;
+    state_.heading_deg = wrap_heading(state_.heading_deg + delta_rot);
+    result.delta.rotation_deg = delta_rot;
 
-    const double transl_step = config_.max_velocity * config_.dt;
-    const double requested_forward = (action == Action::FORWARD) ? transl_step : -transl_step;
+    const double requested_forward = clamped_linear * config_.dt;
 
     constexpr double kPi = 3.14159265358979323846;
     const double heading_rad = state_.heading_deg * kPi / 180.0;
@@ -66,6 +60,19 @@ StepResult Physics::step(Action action) {
     const double actual_dy = state_.y - y0;
     result.delta.forward_in = actual_dx * ux + actual_dy * uy;
     return result;
+}
+
+StepResult Physics::step(Action action) {
+    StepResult result{};
+
+    if (action == Action::NONE) {
+        return result;
+    }
+
+    if (action == Action::ROTATE_CW) return step_continuous(0.0, config_.max_angular_vel);
+    if (action == Action::ROTATE_CCW) return step_continuous(0.0, -config_.max_angular_vel);
+    if (action == Action::FORWARD) return step_continuous(config_.max_velocity, 0.0);
+    return step_continuous(-config_.max_velocity, 0.0);
 }
 
 const RobotState& Physics::state() const {

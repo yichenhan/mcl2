@@ -41,9 +41,17 @@ export default function Home() {
     <main className="flex min-h-screen flex-col bg-zinc-950 p-4 text-zinc-100">
       <div className="mb-3 flex items-center justify-between">
         <h1 className="text-xl font-semibold">MCL Simulator Live</h1>
-        <Link className="rounded bg-zinc-800 px-3 py-1 text-sm" href="/replay">
-          Open Replay
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link className="rounded bg-zinc-800 px-3 py-1 text-sm" href="/routes">
+            Routes
+          </Link>
+          <Link className="rounded bg-zinc-800 px-3 py-1 text-sm" href="/editor">
+            Editor
+          </Link>
+          <Link className="rounded bg-zinc-800 px-3 py-1 text-sm" href="/replay">
+            Replay
+          </Link>
+        </div>
       </div>
 
       <div className="grid flex-1 grid-cols-1 gap-4 lg:grid-cols-[1fr_320px]">

@@ -1,10 +1,15 @@
 #include "server/api.hpp"
 
 #include "noise/failure_injector.hpp"
+#include "pursuit/route.hpp"
+#include "pursuit/route_runner.hpp"
 #include "state/replay_loader.hpp"
 
 #include "nlohmann/json.hpp"
 
+#include <cstdlib>
+#include <filesystem>
+#include <fstream>
 #include <sstream>
 
 namespace server {
@@ -18,6 +23,8 @@ noise::FailureType failure_type_from_string(const std::string& v) {
     if (v == "sensor_stuck") return noise::FailureType::SensorStuck;
     if (v == "odom_spike") return noise::FailureType::OdomSpike;
     if (v == "heading_bias") return noise::FailureType::HeadingBias;
+    if (v == "kidnap") return noise::FailureType::Kidnap;
+    if (v == "spurious_reflection") return noise::FailureType::SpuriousReflection;
     return noise::FailureType::SensorDead;
 }
 } // namespace
@@ -227,6 +234,123 @@ void SimServer::setup_routes() {
             out.push_back(f);
         }
         res.set_content(out.dump(), "application/json");
+    });
+
+    server_.Get("/api/routes", [this](const httplib::Request&, httplib::Response& res) {
+        nlohmann::json out = nlohmann::json::array();
+        std::error_code ec;
+        std::filesystem::create_directories(route_dir_, ec);
+        if (ec) {
+            res.status = 500;
+            res.set_content(json_error("failed to create route dir").dump(), "application/json");
+            return;
+        }
+        for (const auto& entry : std::filesystem::directory_iterator(route_dir_, ec)) {
+            if (ec) break;
+            if (!entry.is_regular_file()) continue;
+            if (entry.path().extension() != ".json") continue;
+            out.push_back(entry.path().filename().string());
+        }
+        res.set_content(out.dump(), "application/json");
+    });
+
+    server_.Get(R"(/api/routes/([^/]+))", [this](const httplib::Request& req, httplib::Response& res) {
+        const std::string route_file = req.matches[1];
+        if (!is_safe_filename(route_file)) {
+            res.status = 400;
+            res.set_content(json_error("invalid route file").dump(), "application/json");
+            return;
+        }
+        const std::string path = route_dir_ + "/" + route_file;
+        std::ifstream in(path);
+        if (!in.is_open()) {
+            res.status = 404;
+            res.set_content(json_error("route not found").dump(), "application/json");
+            return;
+        }
+        nlohmann::json route_json;
+        in >> route_json;
+        res.set_content(route_json.dump(), "application/json");
+    });
+
+    server_.Post("/api/routes", [this](const httplib::Request& req, httplib::Response& res) {
+        nlohmann::json body = nlohmann::json::parse(req.body, nullptr, false);
+        if (body.is_discarded() || !body.is_object()) {
+            res.status = 400;
+            res.set_content(json_error("invalid json").dump(), "application/json");
+            return;
+        }
+        std::string name = body.value("name", std::string(""));
+        if (name.empty()) {
+            res.status = 400;
+            res.set_content(json_error("missing route name").dump(), "application/json");
+            return;
+        }
+        if (name.find('/') != std::string::npos || name.find("..") != std::string::npos) {
+            res.status = 400;
+            res.set_content(json_error("invalid route name").dump(), "application/json");
+            return;
+        }
+        if (name.size() < 5 || name.substr(name.size() - 5) != ".json") {
+            name += ".json";
+        }
+
+        std::error_code ec;
+        std::filesystem::create_directories(route_dir_, ec);
+        if (ec) {
+            res.status = 500;
+            res.set_content(json_error("failed to create route dir").dump(), "application/json");
+            return;
+        }
+
+        const std::string out_path = route_dir_ + "/" + name;
+        std::ofstream out(out_path, std::ios::trunc);
+        if (!out.is_open()) {
+            res.status = 500;
+            res.set_content(json_error("failed to write route").dump(), "application/json");
+            return;
+        }
+        out << body.dump(2);
+        out.close();
+        res.set_content(nlohmann::json{
+            {"saved", true},
+            {"file", name},
+        }.dump(), "application/json");
+    });
+
+    server_.Post(R"(/api/routes/([^/]+)/run)", [this](const httplib::Request& req, httplib::Response& res) {
+        const std::string route_file = req.matches[1];
+        if (!is_safe_filename(route_file)) {
+            res.status = 400;
+            res.set_content(json_error("invalid route file").dump(), "application/json");
+            return;
+        }
+
+        try {
+            pursuit::RouteDefinition route = pursuit::load_route(route_dir_ + "/" + route_file);
+            if (req.has_param("seed")) {
+                route.failure_seed = static_cast<uint64_t>(std::strtoull(req.get_param_value("seed").c_str(), nullptr, 10));
+            }
+            pursuit::RouteRunner runner;
+            const pursuit::RouteResult rr = runner.run(route, replay_dir_);
+
+            nlohmann::json out = {
+                {"replay_file", rr.replay_file},
+                {"result", {
+                    {"route_name", rr.route_name},
+                    {"seed", rr.seed},
+                    {"total_ticks", rr.total_ticks},
+                    {"waypoints_reached", rr.waypoints_reached},
+                    {"completed", rr.completed},
+                    {"final_mcl_error", rr.final_mcl_error},
+                    {"mean_mcl_error", rr.mean_mcl_error},
+                }},
+            };
+            res.set_content(out.dump(), "application/json");
+        } catch (const std::exception& ex) {
+            res.status = 400;
+            res.set_content(json_error(ex.what()).dump(), "application/json");
+        }
     });
 
     server_.Get(R"(/api/replays/([^/]+)/meta)", [this](const httplib::Request& req, httplib::Response& res) {

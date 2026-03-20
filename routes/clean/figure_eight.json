@@ -1,0 +1,76 @@
+{
+  "name": "figure_eight_clean",
+  "description": "Crossing loops to stress heading and localization ambiguity (clean: no failures)",
+  "waypoints": [
+    {
+      "x": 0,
+      "y": 0
+    },
+    {
+      "x": 24,
+      "y": 20
+    },
+    {
+      "x": 38,
+      "y": 0
+    },
+    {
+      "x": 24,
+      "y": -20
+    },
+    {
+      "x": 0,
+      "y": 0
+    },
+    {
+      "x": -24,
+      "y": 20
+    },
+    {
+      "x": -38,
+      "y": 0
+    },
+    {
+      "x": -24,
+      "y": -20
+    },
+    {
+      "x": 0,
+      "y": 0
+    }
+  ],
+  "obstacles": [],
+  "initial_heading_deg": 0,
+  "pure_pursuit": {
+    "lookahead_distance": 11.0,
+    "linear_velocity": 27.0,
+    "waypoint_tolerance": 3.0,
+    "max_angular_velocity_deg": 220.0
+  },
+  "failure_seed": 44,
+  "failure_config": {
+    "sensor_dead_prob": 0.0,
+    "sensor_stuck_prob": 0.0,
+    "odom_spike_prob": 0.0,
+    "heading_bias_prob": 0.0,
+    "spurious_reflection_prob": 0.0,
+    "kidnap_prob": 0.0,
+    "min_duration_ticks": 5,
+    "max_duration_ticks": 12,
+    "odom_spike_range": [
+      2.0,
+      3.5
+    ],
+    "heading_bias_range": [
+      -10.0,
+      10.0
+    ],
+    "spurious_reflection_range": [
+      2.0,
+      10.0
+    ]
+  },
+  "kidnap_events": [],
+  "max_ticks": 520,
+  "max_estimate_speed_ft_per_s": 6.0
+}

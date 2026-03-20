@@ -1,5 +1,7 @@
 import type {
   Action,
+  RouteDefinition,
+  RouteRunResult,
   SessionConfigResponse,
   SessionStartRequest,
   SessionStartResponse,
@@ -79,5 +81,28 @@ export const api = {
 
   health(): Promise<{ status: string }> {
     return request<{ status: string }>("/api/health");
+  },
+
+  listRoutes(): Promise<string[]> {
+    return request<string[]>("/api/routes");
+  },
+
+  getRoute(name: string): Promise<RouteDefinition> {
+    return request<RouteDefinition>(`/api/routes/${encodeURIComponent(name)}`);
+  },
+
+  saveRoute(route: RouteDefinition): Promise<{ saved: boolean; file: string }> {
+    return request<{ saved: boolean; file: string }>("/api/routes", {
+      method: "POST",
+      body: JSON.stringify(route),
+    });
+  },
+
+  runRoute(name: string, seed?: number): Promise<{ replay_file: string; result: RouteRunResult }> {
+    const query = seed === undefined ? "" : `?seed=${seed}`;
+    return request<{ replay_file: string; result: RouteRunResult }>(
+      `/api/routes/${encodeURIComponent(name)}/run${query}`,
+      { method: "POST" },
+    );
   },
 };

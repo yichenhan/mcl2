@@ -268,6 +268,41 @@ Estimate MCLEngine::estimate() const {
     return { static_cast<float>(sum_x), static_cast<float>(sum_y) };
 }
 
+ClusterStats MCLEngine::cluster_stats() const {
+    const Estimate c = estimate();
+    const int N = static_cast<int>(particles_.size());
+    if (N == 0) return {0.0, 0.0, c};
+
+    // Weighted RMS spread and (distance, weight) pairs for percentile calc
+    double wt_dist_sq_sum = 0.0;
+    std::vector<std::pair<double, double>> dist_weight;
+    dist_weight.reserve(static_cast<size_t>(N));
+
+    for (const auto& p : particles_) {
+        const double dx = p.x - c.x;
+        const double dy = p.y - c.y;
+        const double d2 = dx * dx + dy * dy;
+        wt_dist_sq_sum += p.weight * d2;
+        dist_weight.push_back({std::sqrt(d2), static_cast<double>(p.weight)});
+    }
+
+    const double spread = std::sqrt(wt_dist_sq_sum);
+
+    // Sort by distance and walk cumulative weight to find 90th percentile
+    std::sort(dist_weight.begin(), dist_weight.end());
+    double cum = 0.0;
+    double r90 = dist_weight.back().first;
+    for (const auto& [d, w] : dist_weight) {
+        cum += w;
+        if (cum >= 0.9) {
+            r90 = d;
+            break;
+        }
+    }
+
+    return {spread, r90, c};
+}
+
 double MCLEngine::n_eff() const {
     double sum_sq = 0.0;
     for (const auto& p : particles_) {
@@ -279,6 +314,10 @@ double MCLEngine::n_eff() const {
 
 const std::vector<Particle>& MCLEngine::particles() const {
     return particles_;
+}
+
+const MCLConfig& MCLEngine::config() const {
+    return config_;
 }
 
 } // namespace mcl

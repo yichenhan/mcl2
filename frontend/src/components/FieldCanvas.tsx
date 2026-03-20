@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef } from "react";
 
+import { parseFailures } from "@/lib/failures";
 import type { AABB, MCLSnapshot, TickState } from "@/lib/types";
 import type { Stage } from "@/components/StageStepper";
 
@@ -9,6 +10,9 @@ interface Props {
   tick: TickState | null;
   stage: Stage;
   obstacles: AABB[];
+  waypoints?: { x: number; y: number }[];
+  currentWaypointIdx?: number;
+  prevGroundTruth?: { x: number; y: number } | null;
   className?: string;
 }
 
@@ -25,9 +29,21 @@ function pickSnapshot(tick: TickState, stage: Stage): MCLSnapshot {
   return tick.post_resample;
 }
 
-export function FieldCanvas({ tick, stage, obstacles, className }: Props) {
+export function FieldCanvas({
+  tick,
+  stage,
+  obstacles,
+  waypoints,
+  currentWaypointIdx,
+  prevGroundTruth,
+  className,
+}: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const selected = useMemo(() => (tick ? pickSnapshot(tick, stage) : null), [tick, stage]);
+  const parsedFailures = useMemo(
+    () => parseFailures(tick?.active_failures ?? []),
+    [tick?.active_failures],
+  );
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -84,6 +100,37 @@ export function FieldCanvas({ tick, stage, obstacles, className }: Props) {
       ctx.fillRect(pMin.x, pMin.y, pMax.x - pMin.x, pMax.y - pMin.y);
     }
 
+    if (waypoints && waypoints.length > 0) {
+      ctx.strokeStyle = "#06b6d4";
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([6, 4]);
+      for (let i = 1; i < waypoints.length; i++) {
+        const p0 = toCanvas(waypoints[i - 1].x, waypoints[i - 1].y);
+        const p1 = toCanvas(waypoints[i].x, waypoints[i].y);
+        ctx.beginPath();
+        ctx.moveTo(p0.x, p0.y);
+        ctx.lineTo(p1.x, p1.y);
+        ctx.stroke();
+      }
+      ctx.setLineDash([]);
+      for (let i = 0; i < waypoints.length; i++) {
+        const p = toCanvas(waypoints[i].x, waypoints[i].y);
+        const active = currentWaypointIdx === i;
+        ctx.fillStyle = active ? "#06b6d4" : "#3f3f46";
+        ctx.strokeStyle = "#e4e4e7";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 9, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = "#f4f4f5";
+        ctx.font = "10px sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(String(i + 1), p.x, p.y);
+      }
+    }
+
     if (!tick || !selected) return;
 
     for (const p of selected.particles) {
@@ -113,7 +160,10 @@ export function FieldCanvas({ tick, stage, obstacles, className }: Props) {
     const front = toCanvas(gt.x + dir.x * 3, gt.y + dir.y * 3);
     const left = toCanvas(gt.x - dir.x * 2 + perp.x * 2, gt.y - dir.y * 2 + perp.y * 2);
     const right = toCanvas(gt.x - dir.x * 2 - perp.x * 2, gt.y - dir.y * 2 - perp.y * 2);
-    ctx.fillStyle = "#22c55e";
+    const hasKidnap = parsedFailures.some((f) => f.type === "kidnap");
+    const hasOdomSpike = parsedFailures.some((f) => f.type === "odom_spike");
+    const hasHeadingBias = parsedFailures.some((f) => f.type === "heading_bias");
+    ctx.fillStyle = hasKidnap ? "#ef4444" : "#22c55e";
     ctx.beginPath();
     ctx.moveTo(front.x, front.y);
     ctx.lineTo(left.x, left.y);
@@ -121,26 +171,95 @@ export function FieldCanvas({ tick, stage, obstacles, className }: Props) {
     ctx.closePath();
     ctx.fill();
 
+    if (hasOdomSpike) {
+      ctx.fillStyle = "rgba(234, 179, 8, 0.25)";
+      for (let i = 0; i < 3; i++) {
+        const jitter = i - 1;
+        ctx.beginPath();
+        ctx.moveTo(front.x + jitter, front.y + jitter);
+        ctx.lineTo(left.x + jitter, left.y + jitter);
+        ctx.lineTo(right.x + jitter, right.y + jitter);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+
+    if (hasHeadingBias) {
+      const f = parsedFailures.find((x) => x.type === "heading_bias");
+      const bias = f?.param ?? 0;
+      const start = (gt.heading_deg * Math.PI) / 180;
+      const end = ((gt.heading_deg + bias) * Math.PI) / 180;
+      ctx.strokeStyle = "#a855f7";
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 3]);
+      ctx.beginPath();
+      ctx.arc(robot.x, robot.y, 18, -start + Math.PI / 2, -end + Math.PI / 2, bias > 0);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    if (hasKidnap && prevGroundTruth) {
+      const prev = toCanvas(prevGroundTruth.x, prevGroundTruth.y);
+      ctx.strokeStyle = "#ef4444";
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(prev.x, prev.y);
+      ctx.lineTo(robot.x, robot.y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
     const angles = [-90, 90, 0, 180];
     ctx.setLineDash([4, 4]);
     tick.observed_readings.forEach((dist, i) => {
-      if (dist < 0) return;
+      const dead = parsedFailures.some((f) => f.type === "sensor_dead" && f.sensor === i);
+      const stuck = parsedFailures.some((f) => f.type === "sensor_stuck" && f.sensor === i);
+      const spurious = parsedFailures.some((f) => f.type === "spurious_reflection" && f.sensor === i);
       const total = gt.heading_deg + angles[i];
       const d = headingToDir(total);
+      if (dead || dist < 0) {
+        const px = toCanvas(gt.x + d.x * 6, gt.y + d.y * 6);
+        ctx.strokeStyle = "#f97316";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(px.x - 4, px.y - 4);
+        ctx.lineTo(px.x + 4, px.y + 4);
+        ctx.moveTo(px.x + 4, px.y - 4);
+        ctx.lineTo(px.x - 4, px.y + 4);
+        ctx.stroke();
+        return;
+      }
+
       const end = toCanvas(gt.x + d.x * dist, gt.y + d.y * dist);
-      ctx.strokeStyle = "#f59e0b";
+      ctx.strokeStyle = spurious ? "#ef4444" : stuck ? "#71717a" : "#f59e0b";
+      ctx.setLineDash(spurious || stuck ? [] : [4, 4]);
       ctx.beginPath();
       ctx.moveTo(robot.x, robot.y);
       ctx.lineTo(end.x, end.y);
       ctx.stroke();
+      if (spurious) {
+        ctx.strokeStyle = "#ef4444";
+        ctx.beginPath();
+        ctx.moveTo(end.x, end.y - 4);
+        ctx.lineTo(end.x + 4, end.y);
+        ctx.lineTo(end.x, end.y + 4);
+        ctx.lineTo(end.x - 4, end.y);
+        ctx.closePath();
+        ctx.stroke();
+      }
     });
     ctx.setLineDash([]);
-  }, [obstacles, selected, stage, tick]);
+  }, [currentWaypointIdx, obstacles, parsedFailures, prevGroundTruth, selected, stage, tick, waypoints]);
+
+  const kidnapActive = parsedFailures.some((f) => f.type === "kidnap");
 
   return (
     <canvas
       ref={canvasRef}
-      className={className ?? "h-[640px] w-full rounded border border-zinc-700"}
+      className={`${className ?? "h-[640px] w-full rounded border border-zinc-700"} ${
+        kidnapActive ? "border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.45)]" : ""
+      }`}
     />
   );
 }
