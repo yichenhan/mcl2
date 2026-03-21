@@ -1,0 +1,7 @@
+# Replay data (large JSON files)
+replays/
+src/replays/
+
+# Build artifacts
+*.o
+src/route_bin
