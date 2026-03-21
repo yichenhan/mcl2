@@ -108,7 +108,7 @@ const DistanceLocalizationConstants kDistLoc{
 
     // Validation thresholds
     170.0f,          // max_velocity_in_per_s
-    6.0f,            // max_jump_in
+    24.0f,           // max_inches_odom_delta_per_tick (2 ft)
     4.0f,            // wall_sum_tolerance_in
     9999,            // invalid_reading_mm
 

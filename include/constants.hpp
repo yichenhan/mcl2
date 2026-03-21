@@ -83,7 +83,7 @@ struct DistanceLocalizationConstants {
     float back_y_in;
 
     float max_velocity_in_per_s;
-    float max_jump_in;
+    float max_inches_odom_delta_per_tick;
     float wall_sum_tolerance_in;
     int32_t invalid_reading_mm;
 

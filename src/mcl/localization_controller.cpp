@@ -219,9 +219,7 @@ TickOutput LocalizationController::tick_mcl(const TickInput& input) {
         config_.field,
         readings_in,
         heading_deg,
-        prev,
-        std::max(1e-6, config_.tick_dt_sec),
-        config_.gate_enables);
+        prev);
 
     out.correction_distance_in = euclidean(raw_estimate_.x, raw_estimate_.y, accepted_pose_.x, accepted_pose_.y);
     out.correction_applied = out.gate.accepted;

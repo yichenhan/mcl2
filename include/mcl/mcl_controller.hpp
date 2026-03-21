@@ -11,8 +11,7 @@
 namespace mcl {
 
 struct GateConfig {
-    double max_estimate_speed_ft_per_s = 6.0;
-    double max_jump_in = 12.0;
+    double max_inches_odom_delta_per_tick = 24.0;
     double max_radius_90_in = 20.0;
     double max_spread_in = 25.0;
     double max_sensor_residual_in = 6.0;
@@ -22,7 +21,6 @@ struct GateConfig {
 
 struct GateDecision {
     bool accepted = true;
-    bool failed_velocity = false;
     bool failed_spread = false;
     bool failed_passability = false;
     bool failed_residual = false;
@@ -56,8 +54,7 @@ public:
         const sim::Field& field,
         const std::array<double, 4>& readings,
         double heading_deg,
-        const Estimate& prev_accepted,
-        double dt_sec) const;
+        const Estimate& prev_accepted) const;
 
     const MCLEngine& engine() const;
     const GateConfig& gate_config() const;

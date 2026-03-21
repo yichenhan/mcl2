@@ -17,8 +17,10 @@ struct MCLConfig {
     int num_particles = 300;
     double sigma_sensor = 1.5;
     double max_sensor_error = 6.0;
+    double outlier_penalty = 0.01;
     double random_injection = 0.05;
     double resample_threshold = 0.5;
+    double bootstrap_resample_threshold = 0.999999;
     double roughening_sigma = 1.5;  // post-resample jitter for convergence and particle diversity
     // Force resampling for a short window after initialize_uniform() to
     // improve global relocalization and re-init convergence.
@@ -27,6 +29,8 @@ struct MCLConfig {
     // all particles are lost.  Force resampling with higher injection.
     double lost_weight_threshold = 1e-3;
     double lost_random_injection = 0.15;
+    double weight_underflow_threshold = 1e-30;
+    double min_motion_threshold = 1e-9;
     double field_half = 72.0;
     double predict_noise_fwd = 0.0;  // per-particle forward noise fraction
     double predict_noise_lat = 0.0;  // per-particle lateral noise fraction

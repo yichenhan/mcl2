@@ -29,7 +29,6 @@ nlohmann::json cluster_stats_to_json(const ClusterStats& stats) {
 nlohmann::json gate_to_json(const GateDecision& gate) {
     return nlohmann::json{
         { "accepted", gate.accepted },
-        { "failed_velocity", gate.failed_velocity },
         { "failed_spread", gate.failed_spread },
         { "failed_passability", gate.failed_passability },
         { "failed_residual", gate.failed_residual },
@@ -199,9 +198,7 @@ GateDecision MCLController::gate_estimate(
     const sim::Field& field,
     const std::array<double, 4>& readings,
     double heading_deg,
-    const Estimate& prev_accepted,
-    double dt_sec) const {
-    (void)dt_sec;
+    const Estimate& prev_accepted) const {
     GateDecision d;
     const Estimate est = engine_.estimate();
     const ClusterStats cs = engine_.cluster_stats();

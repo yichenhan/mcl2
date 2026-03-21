@@ -137,18 +137,15 @@ TEST_CASE("LocalizationController supports set/get pose and algorithm switch") {
     CHECK(out.algorithm_used == mcl::LocAlgorithm::RayWall);
 }
 
-TEST_CASE("LocalizationController no longer applies velocity gate") {
+TEST_CASE("LocalizationController accepts large jump without velocity gate") {
     mcl::ControllerConfig cfg;
     cfg.algorithm = mcl::LocAlgorithm::MCL;
     cfg.mcl_config.num_particles = 60;
     cfg.min_sensors_for_update = 5;
-    cfg.gate_config.max_estimate_speed_ft_per_s = 1.0;
-    cfg.gate_config.max_jump_in = 100.0;
     cfg.gate_config.max_radius_90_in = 1e6;
     cfg.gate_config.max_spread_in = 1e6;
     cfg.gate_config.max_sensor_residual_in = 1e6;
     cfg.gate_config.min_valid_sensors_for_residual = 0;
-    cfg.gate_enables = {true, false, false, false, false};
     mcl::LocalizationController c(cfg);
     set_all_particles(c, 30.0f, 0.0f);
 
@@ -157,7 +154,6 @@ TEST_CASE("LocalizationController no longer applies velocity gate") {
     in.imu_heading_deg = 0.0;
     const auto out = c.tick(in);
     CHECK(out.gate.accepted);
-    CHECK_FALSE(out.gate.failed_velocity);
 }
 
 TEST_CASE("LocalizationController accepts large jumps when other gates disabled") {
@@ -165,9 +161,6 @@ TEST_CASE("LocalizationController accepts large jumps when other gates disabled"
     cfg.algorithm = mcl::LocAlgorithm::MCL;
     cfg.mcl_config.num_particles = 80;
     cfg.min_sensors_for_update = 5; // skip update path for determinism
-    cfg.gate_config.max_estimate_speed_ft_per_s = 0.5; // now ignored
-    cfg.gate_config.max_jump_in = 100.0;
-    cfg.gate_enables = {true, false, false, false, false};
     mcl::LocalizationController c(cfg);
 
     // Force MCL estimate far from odom; without velocity gating this is accepted.

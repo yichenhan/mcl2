@@ -62,8 +62,7 @@ mcl::GateDecision SimSession::gate_estimate_for_control(
         config_.field,
         tick.observed_readings,
         tick.observed_heading,
-        prev_accepted,
-        config_.physics_config.dt);
+        prev_accepted);
 }
 
 TickState SimSession::tick(sim::Action action) {

@@ -17,24 +17,24 @@ TEST_CASE("RouteRunner executes a simple route and writes replay name") {
     CHECK(!result.replay_file.empty());
 }
 
-TEST_CASE("RouteRunner velocity gate can throttle estimate updates") {
-    pursuit::RouteDefinition fast_gate;
-    fast_gate.name = "unit_velocity_fast";
-    fast_gate.description = "high speed gate";
-    fast_gate.waypoints = {{0.0, 0.0}, {20.0, 0.0}, {20.0, 20.0}};
-    fast_gate.max_ticks = 220;
-    fast_gate.failure_seed = 98;
-    fast_gate.failure_config = {};
-    fast_gate.max_estimate_speed_ft_per_s = 10.0;
+TEST_CASE("RouteRunner odom delta gate can throttle estimate updates") {
+    pursuit::RouteDefinition loose_gate;
+    loose_gate.name = "unit_odom_loose";
+    loose_gate.description = "loose odom gate";
+    loose_gate.waypoints = {{0.0, 0.0}, {20.0, 0.0}, {20.0, 20.0}};
+    loose_gate.max_ticks = 220;
+    loose_gate.failure_seed = 98;
+    loose_gate.failure_config = {};
+    loose_gate.max_inches_odom_delta_per_tick = 48.0;
 
-    pursuit::RouteDefinition strict_gate = fast_gate;
-    strict_gate.name = "unit_velocity_strict";
-    strict_gate.max_estimate_speed_ft_per_s = 0.05;
+    pursuit::RouteDefinition strict_gate = loose_gate;
+    strict_gate.name = "unit_odom_strict";
+    strict_gate.max_inches_odom_delta_per_tick = 0.5;
 
     pursuit::RouteRunner runner;
-    const auto fast = runner.run(fast_gate, "/tmp");
+    const auto loose = runner.run(loose_gate, "/tmp");
     const auto strict = runner.run(strict_gate, "/tmp");
 
-    CHECK(fast.waypoints_reached >= strict.waypoints_reached);
+    CHECK(loose.waypoints_reached >= strict.waypoints_reached);
 }
 

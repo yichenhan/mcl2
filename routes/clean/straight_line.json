@@ -48,5 +48,5 @@
   },
   "kidnap_events": [],
   "max_ticks": 320,
-  "max_estimate_speed_ft_per_s": 6.0
+  "max_inches_odom_delta_per_tick": 24.0
 }

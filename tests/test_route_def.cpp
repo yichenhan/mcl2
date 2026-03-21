@@ -36,19 +36,19 @@ TEST_CASE("validate_route rejects empty waypoints") {
     CHECK_THROWS_AS(pursuit::validate_route(route), std::runtime_error);
 }
 
-TEST_CASE("load_route parses max_estimate_speed_ft_per_s") {
-    const std::string path = temp_path("route_velocity_gate_test.json");
+TEST_CASE("load_route parses max_inches_odom_delta_per_tick") {
+    const std::string path = temp_path("route_odom_gate_test.json");
     std::ofstream out(path, std::ios::trunc);
     out << R"({
-      "name": "velocity_gate_route",
+      "name": "odom_gate_route",
       "waypoints": [{"x": 0, "y": 0}, {"x": 10, "y": 0}, {"x": 10, "y": 10}],
-      "max_estimate_speed_ft_per_s": 2.75,
+      "max_inches_odom_delta_per_tick": 18.5,
       "max_ticks": 120
     })";
     out.close();
 
     const auto route = pursuit::load_route(path);
-    CHECK(route.max_estimate_speed_ft_per_s == doctest::Approx(2.75));
+    CHECK(route.max_inches_odom_delta_per_tick == doctest::Approx(18.5));
 }
 
 TEST_CASE("validate_route rejects segment crossing obstacle") {

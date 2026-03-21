@@ -17,7 +17,7 @@ RouteResult RouteRunner::run(const RouteDefinition& route, const std::string& re
     cfg.seed = route.failure_seed;
     cfg.initial_state = {route.initial_position.x, route.initial_position.y, route.initial_heading_deg};
     cfg.field.obstacles = route.obstacles;
-    cfg.mcl_gate_config.max_estimate_speed_ft_per_s = route.max_estimate_speed_ft_per_s;
+    cfg.mcl_gate_config.max_inches_odom_delta_per_tick = route.max_inches_odom_delta_per_tick;
 
     state::SimSession session(cfg);
     for (const auto& f : build_failure_schedule(route, cfg.field.field_half)) {
@@ -69,7 +69,7 @@ RouteResult RouteRunner::run(const RouteDefinition& route, const std::string& re
         {"route_name", route.name},
         {"description", route.description},
         {"max_ticks", route.max_ticks},
-        {"max_estimate_speed_ft_per_s", route.max_estimate_speed_ft_per_s},
+        {"max_inches_odom_delta_per_tick", route.max_inches_odom_delta_per_tick},
         {"pure_pursuit", {
             {"lookahead_distance", route.pure_pursuit.lookahead_distance},
             {"linear_velocity", route.pure_pursuit.linear_velocity},

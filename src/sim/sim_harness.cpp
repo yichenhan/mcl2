@@ -176,9 +176,7 @@ mcl::GateDecision SimHarness::gate_estimate_for_control(
         config_.controller_config.field,
         tick.observed_readings,
         tick.observed_heading,
-        prev_accepted,
-        config_.physics_config.dt,
-        config_.controller_config.gate_enables);
+        prev_accepted);
 }
 
 mcl::LocalizationController& SimHarness::controller() {

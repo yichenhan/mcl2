@@ -124,7 +124,7 @@ RouteDefinition load_route(const std::string& path) {
     }
     out.initial_heading_deg = j.value("initial_heading_deg", 0.0);
     out.failure_seed = j.value("failure_seed", static_cast<uint64_t>(42));
-    out.max_estimate_speed_ft_per_s = j.value("max_estimate_speed_ft_per_s", out.max_estimate_speed_ft_per_s);
+    out.max_inches_odom_delta_per_tick = j.value("max_inches_odom_delta_per_tick", out.max_inches_odom_delta_per_tick);
     out.max_ticks = j.value("max_ticks", 500);
 
     if (j.contains("waypoints") && j["waypoints"].is_array()) {

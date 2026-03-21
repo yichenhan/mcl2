@@ -18,12 +18,10 @@ void set_all_particles_to(mcl::MCLController& c, float x, float y) {
 
 } // namespace
 
-TEST_CASE("MCLController no longer rejects velocity jump") {
+TEST_CASE("MCLController accepts large jump with no velocity gate") {
     mcl::MCLConfig mcfg;
     mcfg.num_particles = 100;
     mcl::GateConfig gcfg;
-    gcfg.max_estimate_speed_ft_per_s = 1.0;
-    gcfg.max_jump_in = 100.0;
     gcfg.max_radius_90_in = 1e6;
     gcfg.max_spread_in = 1e6;
     gcfg.max_sensor_residual_in = 1e6;
@@ -36,17 +34,14 @@ TEST_CASE("MCLController no longer rejects velocity jump") {
     sim::Field field;
     mcl::Estimate prev{0.0f, 0.0f};
     std::array<double, 4> readings{-1.0, -1.0, -1.0, -1.0};
-    const auto d = c.gate_estimate(field, readings, 0.0, prev, 0.05);
+    const auto d = c.gate_estimate(field, readings, 0.0, prev);
     CHECK(d.accepted);
-    CHECK_FALSE(d.failed_velocity);
 }
 
 TEST_CASE("MCLController gate rejects spread ambiguity") {
     mcl::MCLConfig mcfg;
     mcfg.num_particles = 100;
     mcl::GateConfig gcfg;
-    gcfg.max_estimate_speed_ft_per_s = 1e6;
-    gcfg.max_jump_in = 1e6;
     gcfg.max_radius_90_in = 5.0;
     gcfg.max_spread_in = 5.0;
     gcfg.max_sensor_residual_in = 1e6;
@@ -65,7 +60,7 @@ TEST_CASE("MCLController gate rejects spread ambiguity") {
     sim::Field field;
     mcl::Estimate prev{0.0f, 0.0f};
     std::array<double, 4> readings{-1.0, -1.0, -1.0, -1.0};
-    const auto d = c.gate_estimate(field, readings, 0.0, prev, 0.05);
+    const auto d = c.gate_estimate(field, readings, 0.0, prev);
     CHECK_FALSE(d.accepted);
     CHECK(d.failed_spread);
 }
@@ -74,8 +69,6 @@ TEST_CASE("MCLController gate rejects non-passable estimate") {
     mcl::MCLConfig mcfg;
     mcfg.num_particles = 100;
     mcl::GateConfig gcfg;
-    gcfg.max_estimate_speed_ft_per_s = 1e6;
-    gcfg.max_jump_in = 1e6;
     gcfg.max_radius_90_in = 1e6;
     gcfg.max_spread_in = 1e6;
     gcfg.max_sensor_residual_in = 1e6;
@@ -89,7 +82,7 @@ TEST_CASE("MCLController gate rejects non-passable estimate") {
     field.obstacles.push_back(sim::AABB{-5.0, -5.0, 5.0, 5.0});
     mcl::Estimate prev{0.0f, 0.0f};
     std::array<double, 4> readings{-1.0, -1.0, -1.0, -1.0};
-    const auto d = c.gate_estimate(field, readings, 0.0, prev, 0.05);
+    const auto d = c.gate_estimate(field, readings, 0.0, prev);
     CHECK_FALSE(d.accepted);
     CHECK(d.failed_passability);
 }
@@ -98,8 +91,6 @@ TEST_CASE("MCLController gate rejects high per-sensor residual") {
     mcl::MCLConfig mcfg;
     mcfg.num_particles = 100;
     mcl::GateConfig gcfg;
-    gcfg.max_estimate_speed_ft_per_s = 1e6;
-    gcfg.max_jump_in = 1e6;
     gcfg.max_radius_90_in = 1e6;
     gcfg.max_spread_in = 1e6;
     gcfg.max_sensor_residual_in = 1.0;
@@ -112,7 +103,7 @@ TEST_CASE("MCLController gate rejects high per-sensor residual") {
     sim::Field field;
     mcl::Estimate prev{0.0f, 0.0f};
     std::array<double, 4> readings{0.0, -1.0, -1.0, -1.0}; // intentionally impossible
-    const auto d = c.gate_estimate(field, readings, 0.0, prev, 0.05);
+    const auto d = c.gate_estimate(field, readings, 0.0, prev);
     CHECK_FALSE(d.accepted);
     CHECK(d.failed_residual);
 }
@@ -121,8 +112,6 @@ TEST_CASE("MCLController wall-sum only enforced when pair exists") {
     mcl::MCLConfig mcfg;
     mcfg.num_particles = 100;
     mcl::GateConfig gcfg;
-    gcfg.max_estimate_speed_ft_per_s = 1e6;
-    gcfg.max_jump_in = 1e6;
     gcfg.max_radius_90_in = 1e6;
     gcfg.max_spread_in = 1e6;
     gcfg.max_sensor_residual_in = 1e6;
@@ -137,12 +126,12 @@ TEST_CASE("MCLController wall-sum only enforced when pair exists") {
 
     // Only one axis sensor => wall-sum gate should not fire.
     std::array<double, 4> one_axis{5.0, -1.0, -1.0, -1.0};
-    const auto ok = c.gate_estimate(field, one_axis, 0.0, prev, 0.05);
+    const auto ok = c.gate_estimate(field, one_axis, 0.0, prev);
     CHECK(ok.accepted);
 
     // Paired X-axis readings with impossible sum => wall-sum should fail.
     std::array<double, 4> paired_x{5.0, 5.0, -1.0, -1.0};
-    const auto bad = c.gate_estimate(field, paired_x, 0.0, prev, 0.05);
+    const auto bad = c.gate_estimate(field, paired_x, 0.0, prev);
     CHECK_FALSE(bad.accepted);
     CHECK(bad.failed_wall_sum);
 }
