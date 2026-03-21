@@ -28,7 +28,7 @@ LocalizationController::LocalizationController(const ControllerConfig& config)
       accepted_pose_(config.initial_pose),
       raw_estimate_(config.initial_pose),
       prev_odom_pose_(config.initial_pose),
-      mcl_(std::make_unique<MCLController>(config.mcl_config, config.gate_config)) {
+      mcl_(std::make_unique<MCLController>(config.mcl_config, config.gate_config, config.log_fn)) {
     if (mcl_) {
         const bool has_known_pose =
             config.initial_pose.x != 0.0 || config.initial_pose.y != 0.0;

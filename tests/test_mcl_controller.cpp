@@ -18,7 +18,7 @@ void set_all_particles_to(mcl::MCLController& c, float x, float y) {
 
 } // namespace
 
-TEST_CASE("MCLController gate rejects velocity jump") {
+TEST_CASE("MCLController no longer rejects velocity jump") {
     mcl::MCLConfig mcfg;
     mcfg.num_particles = 100;
     mcl::GateConfig gcfg;
@@ -37,8 +37,8 @@ TEST_CASE("MCLController gate rejects velocity jump") {
     mcl::Estimate prev{0.0f, 0.0f};
     std::array<double, 4> readings{-1.0, -1.0, -1.0, -1.0};
     const auto d = c.gate_estimate(field, readings, 0.0, prev, 0.05);
-    CHECK_FALSE(d.accepted);
-    CHECK(d.failed_velocity);
+    CHECK(d.accepted);
+    CHECK_FALSE(d.failed_velocity);
 }
 
 TEST_CASE("MCLController gate rejects spread ambiguity") {

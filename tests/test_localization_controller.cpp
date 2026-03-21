@@ -137,7 +137,7 @@ TEST_CASE("LocalizationController supports set/get pose and algorithm switch") {
     CHECK(out.algorithm_used == mcl::LocAlgorithm::RayWall);
 }
 
-TEST_CASE("LocalizationController velocity gate toggle changes decision") {
+TEST_CASE("LocalizationController no longer applies velocity gate") {
     mcl::ControllerConfig cfg;
     cfg.algorithm = mcl::LocAlgorithm::MCL;
     cfg.mcl_config.num_particles = 60;
@@ -155,28 +155,22 @@ TEST_CASE("LocalizationController velocity gate toggle changes decision") {
     mcl::TickInput in;
     in.odom_pose = {0.0, 0.0, 0.0};
     in.imu_heading_deg = 0.0;
-    const auto gated = c.tick(in);
-    CHECK_FALSE(gated.gate.accepted);
-    CHECK(gated.gate.failed_velocity);
-
-    cfg.gate_enables.velocity = false;
-    mcl::LocalizationController c2(cfg);
-    set_all_particles(c2, 30.0f, 0.0f);
-    const auto ungated = c2.tick(in);
-    CHECK(ungated.gate.accepted);
+    const auto out = c.tick(in);
+    CHECK(out.gate.accepted);
+    CHECK_FALSE(out.gate.failed_velocity);
 }
 
-TEST_CASE("LocalizationController propagates accepted pose via odom when MCL gated") {
+TEST_CASE("LocalizationController accepts large jumps when other gates disabled") {
     mcl::ControllerConfig cfg;
     cfg.algorithm = mcl::LocAlgorithm::MCL;
     cfg.mcl_config.num_particles = 80;
     cfg.min_sensors_for_update = 5; // skip update path for determinism
-    cfg.gate_config.max_estimate_speed_ft_per_s = 0.5; // tight speed gate
+    cfg.gate_config.max_estimate_speed_ft_per_s = 0.5; // now ignored
     cfg.gate_config.max_jump_in = 100.0;
     cfg.gate_enables = {true, false, false, false, false};
     mcl::LocalizationController c(cfg);
 
-    // Force MCL estimate far from odom so velocity gate rejects.
+    // Force MCL estimate far from odom; without velocity gating this is accepted.
     set_all_particles(c, 100.0f, 100.0f);
 
     mcl::TickInput t0;
@@ -189,9 +183,8 @@ TEST_CASE("LocalizationController propagates accepted pose via odom when MCL gat
     t1.imu_heading_deg = 0.0;
     const auto out = c.tick(t1);
 
-    CHECK_FALSE(out.gate.accepted);
-    // Accepted pose must still advance from odom/IMU propagation.
-    CHECK(out.accepted_pose.y == doctest::Approx(10.0).epsilon(0.05));
+    CHECK(out.gate.accepted);
+    CHECK(out.accepted_pose.y > 50.0);
 }
 
 TEST_CASE("LocalizationController counts valid sensors with mm/null/invalid") {

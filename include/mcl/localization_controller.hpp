@@ -63,6 +63,7 @@ struct ControllerConfig {
     MCLConfig mcl_config{};
     GateConfig gate_config{};
     GateEnables gate_enables{};
+    MCLController::LogFn log_fn{};
     uint64_t seed = 42;
 
     // Ray-wall settings

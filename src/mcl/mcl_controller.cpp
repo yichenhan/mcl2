@@ -3,12 +3,55 @@
 #include "ray/ray_cast_obstacles.hpp"
 
 #include <cmath>
+#include <iostream>
 #include <sstream>
+#include <utility>
 
 namespace mcl {
 
-MCLController::MCLController(const MCLConfig& mcl_config, const GateConfig& gate_config)
-    : engine_(mcl_config), gate_config_(gate_config) {}
+namespace {
+
+nlohmann::json estimate_to_json(const Estimate& est) {
+    return nlohmann::json{
+        { "x", est.x },
+        { "y", est.y },
+    };
+}
+
+nlohmann::json cluster_stats_to_json(const ClusterStats& stats) {
+    return nlohmann::json{
+        { "spread", stats.spread },
+        { "radius_90", stats.radius_90 },
+        { "centroid", estimate_to_json(stats.centroid) },
+    };
+}
+
+nlohmann::json gate_to_json(const GateDecision& gate) {
+    return nlohmann::json{
+        { "accepted", gate.accepted },
+        { "failed_velocity", gate.failed_velocity },
+        { "failed_spread", gate.failed_spread },
+        { "failed_passability", gate.failed_passability },
+        { "failed_residual", gate.failed_residual },
+        { "failed_wall_sum", gate.failed_wall_sum },
+        { "jump_in", gate.jump_in },
+        { "radius_90_in", gate.radius_90_in },
+        { "spread_in", gate.spread_in },
+        { "reason", gate.reason },
+    };
+}
+
+} // namespace
+
+MCLController::MCLController(
+    const MCLConfig& mcl_config,
+    const GateConfig& gate_config,
+    LogFn log_fn)
+    : engine_(mcl_config), gate_config_(gate_config), log_fn_(std::move(log_fn)) {
+    if (!log_fn_) {
+        log_fn_ = [](const std::string& msg) { std::cout << msg; };
+    }
+}
 
 void MCLController::initialize_uniform(uint64_t seed) {
     engine_.initialize_uniform(seed);
@@ -16,14 +59,42 @@ void MCLController::initialize_uniform(uint64_t seed) {
 
 void MCLController::predict(double delta_forward, double delta_rotation, double heading_deg, double delta_lateral) {
     engine_.predict(delta_forward, delta_rotation, heading_deg, delta_lateral);
+    emit_log(
+        "post_predict",
+        nlohmann::json{
+            { "raw_estimate", estimate_to_json(engine_.estimate()) },
+            { "cluster_stats", cluster_stats_to_json(engine_.cluster_stats()) },
+            { "n_eff", engine_.n_eff() },
+            { "post_predict", snapshot_json() },
+        });
 }
 
 void MCLController::update(const double readings[4], double heading_deg) {
     engine_.update(readings, heading_deg);
+    int valid_sensor_count = 0;
+    for (int i = 0; i < 4; ++i) {
+        if (readings[i] >= 0.0) {
+            valid_sensor_count++;
+        }
+    }
+    emit_log(
+        "post_update",
+        nlohmann::json{
+            { "valid_sensor_count", valid_sensor_count },
+            { "update_skipped", false },
+            { "post_update", snapshot_json() },
+        });
 }
 
 void MCLController::resample() {
     engine_.resample();
+    emit_log(
+        "post_resample",
+        nlohmann::json{
+            { "post_resample", snapshot_json() },
+            { "n_eff", engine_.n_eff() },
+            { "cluster_stats", cluster_stats_to_json(engine_.cluster_stats()) },
+        });
 }
 
 Estimate MCLController::estimate() const {
@@ -48,6 +119,32 @@ const MCLEngine& MCLController::engine() const {
 
 const GateConfig& MCLController::gate_config() const {
     return gate_config_;
+}
+
+nlohmann::json MCLController::snapshot_json() const {
+    nlohmann::json particles = nlohmann::json::array();
+    for (const auto& p : engine_.particles()) {
+        particles.push_back({
+            { "x", p.x },
+            { "y", p.y },
+            { "weight", p.weight },
+        });
+    }
+    const ClusterStats cs = engine_.cluster_stats();
+    return nlohmann::json{
+        { "particles", std::move(particles) },
+        { "estimate", estimate_to_json(cs.centroid) },
+        { "n_eff", engine_.n_eff() },
+        { "spread", cs.spread },
+        { "radius_90", cs.radius_90 },
+    };
+}
+
+void MCLController::emit_log(const char* phase, nlohmann::json extra) const {
+    if (!log_fn_) return;
+    extra["phase"] = phase;
+    const std::string line = "[MCL_CONTROLLER_LOG] " + extra.dump() + " [MCL_CONTROLLER_LOG]\n";
+    log_fn_(line);
 }
 
 GateDecision MCLController::fail_decision(const char* reason) const {
@@ -104,6 +201,7 @@ GateDecision MCLController::gate_estimate(
     double heading_deg,
     const Estimate& prev_accepted,
     double dt_sec) const {
+    (void)dt_sec;
     GateDecision d;
     const Estimate est = engine_.estimate();
     const ClusterStats cs = engine_.cluster_stats();
@@ -114,20 +212,11 @@ GateDecision MCLController::gate_estimate(
     const double dy = static_cast<double>(est.y) - static_cast<double>(prev_accepted.y);
     d.jump_in = std::sqrt(dx * dx + dy * dy);
 
-    const double max_jump_speed =
-        std::max(0.0, gate_config_.max_estimate_speed_ft_per_s) * 12.0 * std::max(1e-6, dt_sec);
-    const double max_jump = std::min(gate_config_.max_jump_in, max_jump_speed);
-    if (d.jump_in > max_jump) {
-        d.accepted = false;
-        d.failed_velocity = true;
-        d.reason = "velocity/jump gate";
-        return d;
-    }
-
     if (cs.radius_90 > gate_config_.max_radius_90_in || cs.spread > gate_config_.max_spread_in) {
         d.accepted = false;
         d.failed_spread = true;
         d.reason = "spread gate";
+        emit_log("gate", nlohmann::json{ { "gate", gate_to_json(d) } });
         return d;
     }
 
@@ -135,6 +224,7 @@ GateDecision MCLController::gate_estimate(
         d.accepted = false;
         d.failed_passability = true;
         d.reason = "passability gate";
+        emit_log("gate", nlohmann::json{ { "gate", gate_to_json(d) } });
         return d;
     }
 
@@ -151,6 +241,7 @@ GateDecision MCLController::gate_estimate(
             d.accepted = false;
             d.failed_residual = true;
             d.reason = "sensor residual gate";
+            emit_log("gate", nlohmann::json{ { "gate", gate_to_json(d) } });
             return d;
         }
     }
@@ -158,6 +249,7 @@ GateDecision MCLController::gate_estimate(
         d.accepted = false;
         d.failed_residual = true;
         d.reason = "insufficient valid sensors";
+        emit_log("gate", nlohmann::json{ { "gate", gate_to_json(d) } });
         return d;
     }
 
@@ -165,8 +257,10 @@ GateDecision MCLController::gate_estimate(
         d.accepted = false;
         d.failed_wall_sum = true;
         d.reason = "wall-sum gate";
+        emit_log("gate", nlohmann::json{ { "gate", gate_to_json(d) } });
         return d;
     }
+    emit_log("gate", nlohmann::json{ { "gate", gate_to_json(d) } });
     return d;
 }
 

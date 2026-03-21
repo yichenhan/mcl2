@@ -2,8 +2,10 @@
 
 #include "mcl/mcl_engine.hpp"
 #include "sim/field.hpp"
+#include "nlohmann/json.hpp"
 
 #include <array>
+#include <functional>
 #include <string>
 
 namespace mcl {
@@ -33,7 +35,12 @@ struct GateDecision {
 
 class MCLController {
 public:
-    explicit MCLController(const MCLConfig& mcl_config = {}, const GateConfig& gate_config = {});
+    using LogFn = std::function<void(const std::string&)>;
+
+    explicit MCLController(
+        const MCLConfig& mcl_config = {},
+        const GateConfig& gate_config = {},
+        LogFn log_fn = nullptr);
 
     void initialize_uniform(uint64_t seed);
     void predict(double delta_forward, double delta_rotation, double heading_deg, double delta_lateral);
@@ -56,6 +63,8 @@ public:
     const GateConfig& gate_config() const;
 
 private:
+    nlohmann::json snapshot_json() const;
+    void emit_log(const char* phase, nlohmann::json extra) const;
     GateDecision fail_decision(const char* reason) const;
     bool wall_sum_ok(
         const std::array<double, 4>& readings,
@@ -64,6 +73,7 @@ private:
 
     MCLEngine engine_;
     GateConfig gate_config_;
+    LogFn log_fn_;
 };
 
 } // namespace mcl
