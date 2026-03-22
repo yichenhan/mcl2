@@ -18,14 +18,6 @@ nlohmann::json estimate_to_json(const Estimate& est) {
     };
 }
 
-nlohmann::json cluster_stats_to_json(const ClusterStats& stats) {
-    return nlohmann::json{
-        { "spread", stats.spread },
-        { "radius_90", stats.radius_90 },
-        { "centroid", estimate_to_json(stats.centroid) },
-    };
-}
-
 nlohmann::json gate_to_json(const GateDecision& gate) {
     return nlohmann::json{
         { "accepted", gate.accepted },
@@ -59,14 +51,7 @@ void MCLController::initialize_uniform(uint64_t seed) {
 
 void MCLController::predict(double delta_forward, double delta_rotation, double heading_deg, double delta_lateral) {
     engine_.predict(delta_forward, delta_rotation, heading_deg, delta_lateral);
-    emit_log(
-        "post_predict",
-        nlohmann::json{
-            { "raw_estimate", estimate_to_json(engine_.estimate()) },
-            { "cluster_stats", cluster_stats_to_json(engine_.cluster_stats()) },
-            { "n_eff", engine_.n_eff() },
-            { "post_predict", snapshot_json() },
-        });
+   
 }
 
 void MCLController::update(const double readings[4], double heading_deg) {
@@ -88,12 +73,10 @@ void MCLController::update(const double readings[4], double heading_deg) {
 
 void MCLController::resample() {
     engine_.resample();
-    emit_log(
         "post_resample",
         nlohmann::json{
             { "post_resample", snapshot_json() },
             { "n_eff", engine_.n_eff() },
-            { "cluster_stats", cluster_stats_to_json(engine_.cluster_stats()) },
         });
 }
 
@@ -143,8 +126,6 @@ nlohmann::json MCLController::snapshot_json() const {
 void MCLController::emit_log(const char* phase, nlohmann::json extra) const {
     if (!log_fn_) return;
     extra["phase"] = phase;
-    const std::string line = "[MCL_CONTROLLER_LOG] " + extra.dump() + " [MCL_CONTROLLER_LOG]\n";
-    log_fn_(line);
 }
 
 GateDecision MCLController::fail_decision(const char* reason) const {
