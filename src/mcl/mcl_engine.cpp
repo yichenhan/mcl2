@@ -39,7 +39,10 @@ void MCLEngine::predict(double delta_forward,
                         double /*delta_rotation*/,
                         double heading_deg,
                         double delta_lateral) {
-    if (std::fabs(delta_forward) < 1e-9 && std::fabs(delta_lateral) < 1e-9) return;
+    if (std::fabs(delta_forward) < config_.min_motion_threshold
+        && std::fabs(delta_lateral) < config_.min_motion_threshold) {
+        return;
+    }
 
     // Noise scale follows traveled forward distance.
     const double travel = std::fabs(delta_forward);
@@ -140,13 +143,12 @@ void MCLEngine::update(const double readings[4], double heading_deg) {
         }
 
         // Compute weight: tight Gaussian on mean error, penalty for outliers
-        constexpr double kOutlierPenalty = 0.01;
         double log_w = 0.0;
         if (inlier_count > 0) {
             double mean_err_sq = inlier_error_sq_sum / inlier_count;
             log_w = -mean_err_sq / sigma_sq_2;
         }
-        log_w += outlier_count * std::log(kOutlierPenalty);
+        log_w += outlier_count * std::log(config_.outlier_penalty);
         p.weight = static_cast<float>(std::exp(log_w));
 
         weight_sum += p.weight;
@@ -155,7 +157,7 @@ void MCLEngine::update(const double readings[4], double heading_deg) {
     last_raw_weight_sum_ = weight_sum;
 
     // Normalize weights — fallback to uniform if all weights underflowed
-    if (weight_sum > 1e-30) {
+    if (weight_sum > config_.weight_underflow_threshold) {
         float inv_sum = static_cast<float>(1.0 / weight_sum);
         for (auto& p : particles_) {
             p.weight *= inv_sum;
@@ -184,7 +186,7 @@ void MCLEngine::resample() {
     const bool filter_lost = (avg_raw_weight < config_.lost_weight_threshold);
 
     const double active_threshold = (bootstrap_active || filter_lost)
-        ? 0.999999
+        ? config_.bootstrap_resample_threshold
         : config_.resample_threshold;
     if (neff_ratio >= active_threshold) return;
 

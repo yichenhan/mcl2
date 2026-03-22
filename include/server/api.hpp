@@ -1,6 +1,5 @@
 #pragma once
 
-#include "state/session_recorder.hpp"
 #include "state/sim_session.hpp"
 
 #include "httplib/httplib.h"
@@ -30,7 +29,6 @@ private:
     int next_session_id_ = 1;
 
     std::unordered_map<std::string, std::unique_ptr<state::SimSession>> sessions_;
-    std::unordered_map<std::string, std::unique_ptr<state::SessionRecorder>> recorders_;
 };
 
 } // namespace server

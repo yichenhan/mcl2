@@ -16,6 +16,7 @@ namespace state {
 
 struct SimSessionConfig {
     uint64_t seed = 42;
+    mcl::ReplayConfig replay_config{};
     mcl::MCLConfig mcl_config{};
     sim::PhysicsConfig physics_config{};
     sim::OdomNoiseConfig odom_noise_config{};
@@ -41,6 +42,7 @@ public:
     void schedule_failure(const noise::FailureEvent& event);
     const noise::FailureInjector& failure_injector() const;
     mcl::GateDecision gate_estimate_for_control(const mcl::Estimate& prev_accepted, const TickState& tick) const;
+    mcl::MCLController& mcl_controller();
 
 private:
     static double wrap_heading(double deg);
@@ -58,6 +60,8 @@ private:
 
     int tick_ = 0;
     sim::RobotState odom_state_{};
+    mcl::Estimate replay_prev_accepted_{ 0.0f, 0.0f };
+    bool has_replay_prev_accepted_ = false;
     std::vector<TickState> history_;
 };
 

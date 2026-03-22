@@ -32,16 +32,18 @@ export interface RobotState {
 
 export interface TickState {
   tick: number;
-  ground_truth: RobotState;
+  ground_truth?: RobotState;
   observed_readings: [number, number, number, number];
   observed_heading: number;
-  active_failures: string[];
+  active_failures?: string[];
   post_predict: MCLSnapshot;
   post_update: MCLSnapshot;
   post_resample: MCLSnapshot;
-  mcl_error: number;
-  odom_error: number;
+  mcl_error?: number;
+  odom_error?: number;
   valid_sensor_count: number;
+  gate_decision?: Record<string, unknown>;
+  accepted_pose?: { x: number; y: number };
 }
 
 export interface SessionStartRequest {

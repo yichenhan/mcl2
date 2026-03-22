@@ -10,7 +10,7 @@ SimSession::SimSession(const SimSessionConfig& config)
     : config_(config),
       physics_(config_.field, config_.physics_config),
       sensor_model_(config_.seed, config_.odom_noise_config, config_.sensor_noise_config),
-      mcl_(config_.mcl_config, config_.mcl_gate_config) {
+      mcl_(config_.replay_config, config_.mcl_config, config_.mcl_gate_config) {
     physics_.set_state(config_.initial_state);
     odom_state_ = physics_.state();
     mcl_.initialize_uniform(config_.seed);
@@ -129,6 +129,19 @@ TickState SimSession::process_step(const sim::StepResult& step) {
     out.valid_sensor_count = valid_count;
     out.update_skipped = skip_update;
     out.pose_gated = (out.post_resample.radius_90 > config_.pose_gate_radius_90);
+    const mcl::Estimate prev_accepted = has_replay_prev_accepted_ ? replay_prev_accepted_ : out.post_resample.estimate;
+    const auto replay_gate = mcl_.record_tick(
+        out.tick,
+        config_.field,
+        out.observed_readings,
+        out.observed_heading,
+        out.valid_sensor_count,
+        out.update_skipped,
+        prev_accepted);
+    if (replay_gate.accepted || !has_replay_prev_accepted_) {
+        replay_prev_accepted_ = out.post_resample.estimate;
+        has_replay_prev_accepted_ = true;
+    }
 
     history_.push_back(out);
     tick_++;
@@ -153,6 +166,10 @@ void SimSession::schedule_failure(const noise::FailureEvent& event) {
 
 const noise::FailureInjector& SimSession::failure_injector() const {
     return failure_injector_;
+}
+
+mcl::MCLController& SimSession::mcl_controller() {
+    return mcl_;
 }
 
 std::string action_to_string(sim::Action action) {

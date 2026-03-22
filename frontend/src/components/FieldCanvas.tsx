@@ -6,13 +6,32 @@ import { parseFailures } from "@/lib/failures";
 import type { AABB, MCLSnapshot, TickState } from "@/lib/types";
 import type { Stage } from "@/components/StageStepper";
 
+export interface RenderOptions {
+  particles: boolean;
+  estimate: boolean;
+  groundTruth: boolean;
+  sensorRays: boolean;
+  radius90: boolean;
+  waypoints: boolean;
+}
+
+export const DEFAULT_RENDER_OPTIONS: RenderOptions = {
+  particles: true,
+  estimate: true,
+  groundTruth: true,
+  sensorRays: true,
+  radius90: true,
+  waypoints: true,
+};
+
 interface Props {
   tick: TickState | null;
   stage: Stage;
   obstacles: AABB[];
   waypoints?: { x: number; y: number }[];
   currentWaypointIdx?: number;
-  prevGroundTruth?: { x: number; y: number } | null;
+  prevTick?: TickState | null;
+  renderOptions?: RenderOptions;
   className?: string;
 }
 
@@ -35,9 +54,15 @@ export function FieldCanvas({
   obstacles,
   waypoints,
   currentWaypointIdx,
-  prevGroundTruth,
+  prevTick,
+  renderOptions = DEFAULT_RENDER_OPTIONS,
   className,
 }: Props) {
+  const opts = renderOptions;
+  const prevSelected = useMemo(
+    () => (prevTick ? pickSnapshot(prevTick, stage) : null),
+    [prevTick, stage],
+  );
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const selected = useMemo(() => (tick ? pickSnapshot(tick, stage) : null), [tick, stage]);
   const parsedFailures = useMemo(
@@ -66,10 +91,12 @@ export function FieldCanvas({
       y: height / 2 - y * scale,
     });
 
+    // --- background ---
     ctx.clearRect(0, 0, width, height);
     ctx.fillStyle = "#0b1020";
     ctx.fillRect(0, 0, width, height);
 
+    // --- grid ---
     ctx.strokeStyle = "#1f2a44";
     ctx.lineWidth = 1;
     for (let v = -72; v <= 72; v += 12) {
@@ -87,12 +114,14 @@ export function FieldCanvas({
       ctx.stroke();
     }
 
+    // --- field border ---
     ctx.strokeStyle = "#d4d4d8";
     ctx.lineWidth = 2;
     const tl = toCanvas(-72, 72);
     const br = toCanvas(72, -72);
     ctx.strokeRect(tl.x, tl.y, br.x - tl.x, br.y - tl.y);
 
+    // --- obstacles ---
     ctx.fillStyle = "rgba(251, 146, 60, 0.45)";
     for (const o of obstacles) {
       const pMin = toCanvas(o.min_x, o.max_y);
@@ -100,7 +129,8 @@ export function FieldCanvas({
       ctx.fillRect(pMin.x, pMin.y, pMax.x - pMin.x, pMax.y - pMin.y);
     }
 
-    if (waypoints && waypoints.length > 0) {
+    // --- waypoints ---
+    if (opts.waypoints && waypoints && waypoints.length > 0) {
       ctx.strokeStyle = "#06b6d4";
       ctx.lineWidth = 1.5;
       ctx.setLineDash([6, 4]);
@@ -133,33 +163,109 @@ export function FieldCanvas({
 
     if (!tick || !selected) return;
 
-    for (const p of selected.particles) {
-      const pt = toCanvas(p.x, p.y);
-      const weightAlpha = Math.min(0.85, Math.max(0.15, p.weight * 5));
-      ctx.fillStyle = `rgba(96, 165, 250, ${weightAlpha})`;
-      ctx.fillRect(pt.x, pt.y, 2, 2);
+    // --- particles ---
+    if (opts.particles) {
+      for (const p of selected.particles) {
+        const pt = toCanvas(p.x, p.y);
+        const weightAlpha = Math.min(0.85, Math.max(0.15, p.weight * 5));
+        ctx.fillStyle = `rgba(96, 165, 250, ${weightAlpha})`;
+        ctx.fillRect(pt.x, pt.y, 2, 2);
+      }
     }
 
-    const est = toCanvas(selected.estimate.x, selected.estimate.y);
-    ctx.strokeStyle = "#3b82f6";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(est.x, est.y, 6, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(est.x - 8, est.y);
-    ctx.lineTo(est.x + 8, est.y);
-    ctx.moveTo(est.x, est.y - 8);
-    ctx.lineTo(est.x, est.y + 8);
-    ctx.stroke();
+    // --- estimate crosshair (blue) ---
+    if (opts.estimate) {
+      const est = toCanvas(selected.estimate.x, selected.estimate.y);
 
+      const gateDecision =
+        tick.gate_decision && typeof tick.gate_decision === "object"
+          ? (tick.gate_decision as Record<string, unknown>)
+          : null;
+      const radius90In =
+        gateDecision && typeof gateDecision.radius_90_in === "number"
+          ? gateDecision.radius_90_in
+          : null;
+
+      if (opts.radius90 && radius90In && Number.isFinite(radius90In) && radius90In > 0) {
+        ctx.strokeStyle = "rgba(147, 197, 253, 0.8)";
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([6, 4]);
+        ctx.beginPath();
+        ctx.arc(est.x, est.y, radius90In * scale, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      ctx.strokeStyle = "#3b82f6";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(est.x, est.y, 6, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(est.x - 8, est.y);
+      ctx.lineTo(est.x + 8, est.y);
+      ctx.moveTo(est.x, est.y - 8);
+      ctx.lineTo(est.x, est.y + 8);
+      ctx.stroke();
+    }
+
+    // --- ground truth green dot (when available from full sim) ---
     const gt = tick.ground_truth;
-    const robot = toCanvas(gt.x, gt.y);
-    const dir = headingToDir(gt.heading_deg);
+    if (opts.groundTruth && gt) {
+      const gtPt = toCanvas(gt.x, gt.y);
+      ctx.fillStyle = "rgba(74, 222, 128, 0.7)";
+      ctx.beginPath();
+      ctx.arc(gtPt.x, gtPt.y, 4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // --- accepted / control pose (orange dot + IMU heading) ---
+    const ap = tick.accepted_pose;
+    if (opts.groundTruth && ap) {
+      const apPt = toCanvas(ap.x, ap.y);
+      ctx.fillStyle = "#fb923c";
+      ctx.beginPath();
+      ctx.arc(apPt.x, apPt.y, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#fdba74";
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(apPt.x, apPt.y, 5, 0, Math.PI * 2);
+      ctx.stroke();
+
+      const headDir = headingToDir(tick.observed_heading);
+      const headEnd = toCanvas(ap.x + headDir.x * 6, ap.y + headDir.y * 6);
+      ctx.strokeStyle = "#fdba74";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(apPt.x, apPt.y);
+      ctx.lineTo(headEnd.x, headEnd.y);
+      ctx.stroke();
+    }
+
+    // --- robot pose triangle (green/red based on kidnap) ---
+    const pose = gt
+      ? gt
+      : ap
+        ? { x: ap.x, y: ap.y, heading_deg: tick.observed_heading }
+        : {
+            x: selected.estimate.x,
+            y: selected.estimate.y,
+            heading_deg: tick.observed_heading,
+          };
+
+    const robot = toCanvas(pose.x, pose.y);
+    const dir = headingToDir(pose.heading_deg);
     const perp = { x: dir.y, y: -dir.x };
-    const front = toCanvas(gt.x + dir.x * 3, gt.y + dir.y * 3);
-    const left = toCanvas(gt.x - dir.x * 2 + perp.x * 2, gt.y - dir.y * 2 + perp.y * 2);
-    const right = toCanvas(gt.x - dir.x * 2 - perp.x * 2, gt.y - dir.y * 2 - perp.y * 2);
+    const front = toCanvas(pose.x + dir.x * 3, pose.y + dir.y * 3);
+    const left = toCanvas(
+      pose.x - dir.x * 2 + perp.x * 2,
+      pose.y - dir.y * 2 + perp.y * 2,
+    );
+    const right = toCanvas(
+      pose.x - dir.x * 2 - perp.x * 2,
+      pose.y - dir.y * 2 - perp.y * 2,
+    );
     const hasKidnap = parsedFailures.some((f) => f.type === "kidnap");
     const hasOdomSpike = parsedFailures.some((f) => f.type === "odom_spike");
     const hasHeadingBias = parsedFailures.some((f) => f.type === "heading_bias");
@@ -187,8 +293,8 @@ export function FieldCanvas({
     if (hasHeadingBias) {
       const f = parsedFailures.find((x) => x.type === "heading_bias");
       const bias = f?.param ?? 0;
-      const start = (gt.heading_deg * Math.PI) / 180;
-      const end = ((gt.heading_deg + bias) * Math.PI) / 180;
+      const start = (pose.heading_deg * Math.PI) / 180;
+      const end = ((pose.heading_deg + bias) * Math.PI) / 180;
       ctx.strokeStyle = "#a855f7";
       ctx.lineWidth = 2;
       ctx.setLineDash([4, 3]);
@@ -198,8 +304,16 @@ export function FieldCanvas({
       ctx.setLineDash([]);
     }
 
-    if (hasKidnap && prevGroundTruth) {
-      const prev = toCanvas(prevGroundTruth.x, prevGroundTruth.y);
+    if (hasKidnap && prevTick && prevSelected) {
+      const prevGt = prevTick.ground_truth;
+      const prevPose = prevGt
+        ? prevGt
+        : {
+            x: prevSelected.estimate.x,
+            y: prevSelected.estimate.y,
+            heading_deg: prevTick.observed_heading,
+          };
+      const prev = toCanvas(prevPose.x, prevPose.y);
       ctx.strokeStyle = "#ef4444";
       ctx.lineWidth = 2;
       ctx.setLineDash([4, 4]);
@@ -210,47 +324,52 @@ export function FieldCanvas({
       ctx.setLineDash([]);
     }
 
-    const angles = [-90, 90, 0, 180];
-    ctx.setLineDash([4, 4]);
-    tick.observed_readings.forEach((dist, i) => {
-      const dead = parsedFailures.some((f) => f.type === "sensor_dead" && f.sensor === i);
-      const stuck = parsedFailures.some((f) => f.type === "sensor_stuck" && f.sensor === i);
-      const spurious = parsedFailures.some((f) => f.type === "spurious_reflection" && f.sensor === i);
-      const total = gt.heading_deg + angles[i];
-      const d = headingToDir(total);
-      if (dead || dist < 0) {
-        const px = toCanvas(gt.x + d.x * 6, gt.y + d.y * 6);
-        ctx.strokeStyle = "#f97316";
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(px.x - 4, px.y - 4);
-        ctx.lineTo(px.x + 4, px.y + 4);
-        ctx.moveTo(px.x + 4, px.y - 4);
-        ctx.lineTo(px.x - 4, px.y + 4);
-        ctx.stroke();
-        return;
-      }
+    // --- sensor rays ---
+    if (opts.sensorRays) {
+      const angles = [-90, 90, 0, 180];
+      ctx.setLineDash([4, 4]);
+      tick.observed_readings.forEach((dist, i) => {
+        const dead = parsedFailures.some((f) => f.type === "sensor_dead" && f.sensor === i);
+        const stuck = parsedFailures.some((f) => f.type === "sensor_stuck" && f.sensor === i);
+        const spurious = parsedFailures.some(
+          (f) => f.type === "spurious_reflection" && f.sensor === i,
+        );
+        const total = pose.heading_deg + angles[i];
+        const d = headingToDir(total);
+        if (dead || dist < 0) {
+          const px = toCanvas(pose.x + d.x * 6, pose.y + d.y * 6);
+          ctx.strokeStyle = "#f97316";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(px.x - 4, px.y - 4);
+          ctx.lineTo(px.x + 4, px.y + 4);
+          ctx.moveTo(px.x + 4, px.y - 4);
+          ctx.lineTo(px.x - 4, px.y + 4);
+          ctx.stroke();
+          return;
+        }
 
-      const end = toCanvas(gt.x + d.x * dist, gt.y + d.y * dist);
-      ctx.strokeStyle = spurious ? "#ef4444" : stuck ? "#71717a" : "#f59e0b";
-      ctx.setLineDash(spurious || stuck ? [] : [4, 4]);
-      ctx.beginPath();
-      ctx.moveTo(robot.x, robot.y);
-      ctx.lineTo(end.x, end.y);
-      ctx.stroke();
-      if (spurious) {
-        ctx.strokeStyle = "#ef4444";
+        const endPt = toCanvas(pose.x + d.x * dist, pose.y + d.y * dist);
+        ctx.strokeStyle = spurious ? "#ef4444" : stuck ? "#71717a" : "#f59e0b";
+        ctx.setLineDash(spurious || stuck ? [] : [4, 4]);
         ctx.beginPath();
-        ctx.moveTo(end.x, end.y - 4);
-        ctx.lineTo(end.x + 4, end.y);
-        ctx.lineTo(end.x, end.y + 4);
-        ctx.lineTo(end.x - 4, end.y);
-        ctx.closePath();
+        ctx.moveTo(robot.x, robot.y);
+        ctx.lineTo(endPt.x, endPt.y);
         ctx.stroke();
-      }
-    });
-    ctx.setLineDash([]);
-  }, [currentWaypointIdx, obstacles, parsedFailures, prevGroundTruth, selected, stage, tick, waypoints]);
+        if (spurious) {
+          ctx.strokeStyle = "#ef4444";
+          ctx.beginPath();
+          ctx.moveTo(endPt.x, endPt.y - 4);
+          ctx.lineTo(endPt.x + 4, endPt.y);
+          ctx.lineTo(endPt.x, endPt.y + 4);
+          ctx.lineTo(endPt.x - 4, endPt.y);
+          ctx.closePath();
+          ctx.stroke();
+        }
+      });
+      ctx.setLineDash([]);
+    }
+  }, [currentWaypointIdx, obstacles, opts, parsedFailures, prevSelected, prevTick, selected, stage, tick, waypoints]);
 
   const kidnapActive = parsedFailures.some((f) => f.type === "kidnap");
 

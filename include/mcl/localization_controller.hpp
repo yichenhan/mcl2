@@ -60,6 +60,7 @@ struct ControllerConfig {
     LocAlgorithm algorithm = LocAlgorithm::MCL;
 
     // MCL settings
+    ReplayConfig replay_config{};
     MCLConfig mcl_config{};
     GateConfig gate_config{};
     GateEnables gate_enables{};
@@ -123,6 +124,7 @@ private:
     Pose raw_estimate_{};
     Pose prev_odom_pose_{};
     bool has_prev_odom_ = false;
+    int replay_tick_ = 0;
     std::unique_ptr<MCLController> mcl_;
 };
 

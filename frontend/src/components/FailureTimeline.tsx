@@ -28,7 +28,7 @@ export function FailureTimeline({ ticks, cursor, onJump }: Props) {
   const total = ticks.length;
 
   const cells = useMemo(() => {
-    return ticks.map((t) => parseFailures(t.active_failures));
+    return ticks.map((t) => parseFailures(t.active_failures ?? []));
   }, [ticks]);
 
   if (total <= 0) {

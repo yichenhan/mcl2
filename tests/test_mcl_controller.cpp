@@ -5,6 +5,11 @@
 
 namespace {
 
+const mcl::ReplayConfig kReplayConfig{
+    "replays/test_mcl_controller",
+    "test_session"
+};
+
 void set_all_particles_to(mcl::MCLController& c, float x, float y) {
     auto& particles = const_cast<std::vector<mcl::Particle>&>(c.particles());
     if (particles.empty()) return;
@@ -27,7 +32,7 @@ TEST_CASE("MCLController accepts large jump with no velocity gate") {
     gcfg.max_sensor_residual_in = 1e6;
     gcfg.min_valid_sensors_for_residual = 0;
 
-    mcl::MCLController c(mcfg, gcfg);
+    mcl::MCLController c(kReplayConfig, mcfg, gcfg);
     c.initialize_uniform(1);
     set_all_particles_to(c, 30.0f, 0.0f);
 
@@ -47,7 +52,7 @@ TEST_CASE("MCLController gate rejects spread ambiguity") {
     gcfg.max_sensor_residual_in = 1e6;
     gcfg.min_valid_sensors_for_residual = 0;
 
-    mcl::MCLController c(mcfg, gcfg);
+    mcl::MCLController c(kReplayConfig, mcfg, gcfg);
     c.initialize_uniform(2);
     auto& particles = const_cast<std::vector<mcl::Particle>&>(c.particles());
     const float w = 1.0f / static_cast<float>(particles.size());
@@ -74,7 +79,7 @@ TEST_CASE("MCLController gate rejects non-passable estimate") {
     gcfg.max_sensor_residual_in = 1e6;
     gcfg.min_valid_sensors_for_residual = 0;
 
-    mcl::MCLController c(mcfg, gcfg);
+    mcl::MCLController c(kReplayConfig, mcfg, gcfg);
     c.initialize_uniform(3);
     set_all_particles_to(c, 0.0f, 0.0f);
 
@@ -96,7 +101,7 @@ TEST_CASE("MCLController gate rejects high per-sensor residual") {
     gcfg.max_sensor_residual_in = 1.0;
     gcfg.min_valid_sensors_for_residual = 1;
 
-    mcl::MCLController c(mcfg, gcfg);
+    mcl::MCLController c(kReplayConfig, mcfg, gcfg);
     c.initialize_uniform(4);
     set_all_particles_to(c, 0.0f, 0.0f);
 
@@ -118,7 +123,7 @@ TEST_CASE("MCLController wall-sum only enforced when pair exists") {
     gcfg.min_valid_sensors_for_residual = 0;
     gcfg.wall_sum_tolerance_in = 1.0;
 
-    mcl::MCLController c(mcfg, gcfg);
+    mcl::MCLController c(kReplayConfig, mcfg, gcfg);
     c.initialize_uniform(5);
     set_all_particles_to(c, 0.0f, 0.0f);
     sim::Field field;

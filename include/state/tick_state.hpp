@@ -35,6 +35,7 @@ struct TickState {
     int valid_sensor_count = 0;
     bool update_skipped = false;
     bool pose_gated = false;
+    nlohmann::json gate_decision = nullptr;
 };
 
 inline void to_json(nlohmann::json& j, const MCLSnapshot& s) {
@@ -92,27 +93,46 @@ inline void to_json(nlohmann::json& j, const TickState& t) {
     j["valid_sensor_count"] = t.valid_sensor_count;
     j["update_skipped"] = t.update_skipped;
     j["pose_gated"] = t.pose_gated;
+    if (!t.gate_decision.is_null()) {
+        j["gate_decision"] = t.gate_decision;
+    }
 }
 
 inline void from_json(const nlohmann::json& j, TickState& t) {
     t.tick = j.at("tick").get<int>();
-    const auto& gt = j.at("ground_truth");
-    t.ground_truth.x = gt.at("x").get<double>();
-    t.ground_truth.y = gt.at("y").get<double>();
-    t.ground_truth.heading_deg = gt.at("heading_deg").get<double>();
-    t.observed_readings = j.at("observed_readings").get<std::array<double, 4>>();
-    t.observed_heading = j.at("observed_heading").get<double>();
-    t.active_failures = j.at("active_failures").get<std::vector<std::string>>();
+    if (j.contains("ground_truth")) {
+        const auto& gt = j.at("ground_truth");
+        t.ground_truth.x = gt.at("x").get<double>();
+        t.ground_truth.y = gt.at("y").get<double>();
+        t.ground_truth.heading_deg = gt.at("heading_deg").get<double>();
+    }
+    if (j.contains("observed_readings")) {
+        t.observed_readings = j.at("observed_readings").get<std::array<double, 4>>();
+    }
+    if (j.contains("observed_heading")) {
+        t.observed_heading = j.at("observed_heading").get<double>();
+    }
+    if (j.contains("active_failures")) {
+        t.active_failures = j.at("active_failures").get<std::vector<std::string>>();
+    }
     t.post_predict = j.at("post_predict").get<MCLSnapshot>();
     t.post_update = j.at("post_update").get<MCLSnapshot>();
     t.post_resample = j.at("post_resample").get<MCLSnapshot>();
-    t.mcl_error = j.at("mcl_error").get<double>();
-    t.odom_error = j.at("odom_error").get<double>();
-    t.valid_sensor_count = j.at("valid_sensor_count").get<int>();
+    if (j.contains("mcl_error")) {
+        t.mcl_error = j.at("mcl_error").get<double>();
+    }
+    if (j.contains("odom_error")) {
+        t.odom_error = j.at("odom_error").get<double>();
+    }
+    if (j.contains("valid_sensor_count")) {
+        t.valid_sensor_count = j.at("valid_sensor_count").get<int>();
+    }
     if (j.contains("update_skipped"))
         t.update_skipped = j.at("update_skipped").get<bool>();
     if (j.contains("pose_gated"))
         t.pose_gated = j.at("pose_gated").get<bool>();
+    if (j.contains("gate_decision"))
+        t.gate_decision = j.at("gate_decision");
 }
 
 } // namespace state

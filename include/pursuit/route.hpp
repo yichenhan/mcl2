@@ -48,7 +48,7 @@ struct RouteDefinition {
     uint64_t failure_seed = 42;
     FailureGenConfig failure_config{};
     std::vector<KidnapEvent> kidnap_events;
-    double max_inches_odom_delta_per_tick = 24.0;
+    double max_inches_odom_delta_per_tick = 12.0;
     int max_ticks = 500;
 };
 

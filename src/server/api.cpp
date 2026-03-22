@@ -94,23 +94,9 @@ void SimServer::setup_routes() {
             std::ostringstream ss;
             ss << "s" << next_session_id_++;
             session_id = ss.str();
+            cfg.replay_config.directory = replay_dir_;
+            cfg.replay_config.session_id = session_id;
             sessions_[session_id] = std::make_unique<state::SimSession>(cfg);
-            recorders_[session_id] = std::make_unique<state::SessionRecorder>(replay_dir_, session_id);
-            recorders_[session_id]->set_config(nlohmann::json{
-                { "seed", cfg.seed },
-                { "num_particles", cfg.mcl_config.num_particles },
-                { "field_half", cfg.field.field_half },
-            });
-            nlohmann::json obstacles = nlohmann::json::array();
-            for (const auto& o : cfg.field.obstacles) {
-                obstacles.push_back({
-                    { "min_x", o.min_x },
-                    { "min_y", o.min_y },
-                    { "max_x", o.max_x },
-                    { "max_y", o.max_y },
-                });
-            }
-            recorders_[session_id]->set_obstacles(obstacles);
         }
 
         if (body.contains("failures") && body["failures"].is_array()) {
@@ -152,14 +138,12 @@ void SimServer::setup_routes() {
 
         std::lock_guard<std::mutex> lock(mutex_);
         auto it = sessions_.find(session_id);
-        auto rec_it = recorders_.find(session_id);
-        if (it == sessions_.end() || rec_it == recorders_.end()) {
+        if (it == sessions_.end()) {
             res.status = 404;
             res.set_content(json_error("session not found").dump(), "application/json");
             return;
         }
         state::TickState tick = it->second->tick(action);
-        rec_it->second->record(tick);
         res.set_content(nlohmann::json(tick).dump(), "application/json");
     });
 
@@ -208,20 +192,17 @@ void SimServer::setup_routes() {
         const std::string session_id = req.matches[1];
         std::lock_guard<std::mutex> lock(mutex_);
         auto it = sessions_.find(session_id);
-        auto rec_it = recorders_.find(session_id);
-        if (it == sessions_.end() || rec_it == recorders_.end()) {
+        if (it == sessions_.end()) {
             res.status = 404;
             res.set_content(json_error("session not found").dump(), "application/json");
             return;
         }
-        const bool wrote = rec_it->second->write_atomic();
-        const int tick_count = rec_it->second->tick_count();
-        const std::string path = rec_it->second->output_path();
-        recorders_.erase(rec_it);
+        const int tick_count = static_cast<int>(it->second->history().size());
+        const std::string path = it->second->mcl_controller().replay_output_path();
         sessions_.erase(it);
 
         res.set_content(nlohmann::json{
-            { "saved", wrote },
+            { "saved", true },
             { "ticks", tick_count },
             { "path", path },
         }.dump(), "application/json");

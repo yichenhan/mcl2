@@ -75,5 +75,5 @@
   },
   "kidnap_events": [],
   "max_ticks": 700,
-  "max_inches_odom_delta_per_tick": 24.0
+  "max_inches_odom_delta_per_tick": 12.0
 }
