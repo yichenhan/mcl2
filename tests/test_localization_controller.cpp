@@ -137,7 +137,7 @@ TEST_CASE("LocalizationController supports set/get pose and algorithm switch") {
     CHECK(out.algorithm_used == mcl::LocAlgorithm::RayWall);
 }
 
-TEST_CASE("LocalizationController no longer applies velocity gate") {
+TEST_CASE("LocalizationController applies velocity gate") {
     mcl::ControllerConfig cfg;
     cfg.algorithm = mcl::LocAlgorithm::MCL;
     cfg.mcl_config.num_particles = 60;
@@ -156,21 +156,21 @@ TEST_CASE("LocalizationController no longer applies velocity gate") {
     in.odom_pose = {0.0, 0.0, 0.0};
     in.imu_heading_deg = 0.0;
     const auto out = c.tick(in);
-    CHECK(out.gate.accepted);
-    CHECK_FALSE(out.gate.failed_velocity);
+    CHECK_FALSE(out.gate.accepted);
+    CHECK(out.gate.failed_velocity);
 }
 
-TEST_CASE("LocalizationController accepts large jumps when other gates disabled") {
+TEST_CASE("LocalizationController rejects large jumps when velocity gate enabled") {
     mcl::ControllerConfig cfg;
     cfg.algorithm = mcl::LocAlgorithm::MCL;
     cfg.mcl_config.num_particles = 80;
     cfg.min_sensors_for_update = 5; // skip update path for determinism
-    cfg.gate_config.max_estimate_speed_ft_per_s = 0.5; // now ignored
+    cfg.gate_config.max_estimate_speed_ft_per_s = 0.5;
     cfg.gate_config.max_jump_in = 100.0;
     cfg.gate_enables = {true, false, false, false, false};
     mcl::LocalizationController c(cfg);
 
-    // Force MCL estimate far from odom; without velocity gating this is accepted.
+    // Force MCL estimate far from odom; velocity gate should reject this correction.
     set_all_particles(c, 100.0f, 100.0f);
 
     mcl::TickInput t0;
@@ -183,8 +183,9 @@ TEST_CASE("LocalizationController accepts large jumps when other gates disabled"
     t1.imu_heading_deg = 0.0;
     const auto out = c.tick(t1);
 
-    CHECK(out.gate.accepted);
-    CHECK(out.accepted_pose.y > 50.0);
+    CHECK_FALSE(out.gate.accepted);
+    CHECK(out.gate.failed_velocity);
+    CHECK(out.accepted_pose.y < 20.0);
 }
 
 TEST_CASE("LocalizationController counts valid sensors with mm/null/invalid") {

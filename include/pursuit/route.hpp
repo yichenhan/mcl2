@@ -51,7 +51,7 @@ struct RouteDefinition {
     // Gate estimated pose updates used by route control.
     // If the MCL estimate jumps farther than this speed budget per tick,
     // the controller keeps the previous estimate instead of accepting the jump.
-    double max_estimate_speed_ft_per_s = 6.0;
+    double max_estimate_speed_ft_per_s = 13.0;
     int max_ticks = 500;
 };
 

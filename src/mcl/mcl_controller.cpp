@@ -2,6 +2,7 @@
 
 #include "ray/ray_cast_obstacles.hpp"
 
+#include <algorithm>
 #include <cmath>
 #include <iostream>
 #include <sstream>
@@ -73,6 +74,7 @@ void MCLController::update(const double readings[4], double heading_deg) {
 
 void MCLController::resample() {
     engine_.resample();
+    emit_log(
         "post_resample",
         nlohmann::json{
             { "post_resample", snapshot_json() },
@@ -181,8 +183,8 @@ GateDecision MCLController::gate_estimate(
     const std::array<double, 4>& readings,
     double heading_deg,
     const Estimate& prev_accepted,
-    double dt_sec) const {
-    (void)dt_sec;
+    double dt_sec,
+    const GateEnables& gate_enables) const {
     GateDecision d;
     const Estimate est = engine_.estimate();
     const ClusterStats cs = engine_.cluster_stats();
@@ -193,7 +195,18 @@ GateDecision MCLController::gate_estimate(
     const double dy = static_cast<double>(est.y) - static_cast<double>(prev_accepted.y);
     d.jump_in = std::sqrt(dx * dx + dy * dy);
 
-    if (cs.radius_90 > gate_config_.max_radius_90_in || cs.spread > gate_config_.max_spread_in) {
+    const double safe_dt = std::max(dt_sec, 1e-6);
+    const double speed_ft_per_s = (d.jump_in / 12.0) / safe_dt;
+    if (gate_enables.velocity && speed_ft_per_s > gate_config_.max_estimate_speed_ft_per_s) {
+        d.accepted = false;
+        d.failed_velocity = true;
+        d.reason = "velocity gate";
+        emit_log("gate", nlohmann::json{ { "gate", gate_to_json(d) } });
+        return d;
+    }
+
+    if (gate_enables.spread &&
+        (cs.radius_90 > gate_config_.max_radius_90_in || cs.spread > gate_config_.max_spread_in)) {
         d.accepted = false;
         d.failed_spread = true;
         d.reason = "spread gate";
@@ -201,7 +214,7 @@ GateDecision MCLController::gate_estimate(
         return d;
     }
 
-    if (!field.is_passable(est.x, est.y)) {
+    if (gate_enables.passability && !field.is_passable(est.x, est.y)) {
         d.accepted = false;
         d.failed_passability = true;
         d.reason = "passability gate";
@@ -209,32 +222,34 @@ GateDecision MCLController::gate_estimate(
         return d;
     }
 
-    int valid_count = 0;
-    const auto& sensors = engine_.config().sensors;
-    for (int i = 0; i < 4; ++i) {
-        if (readings[static_cast<size_t>(i)] < 0.0) continue;
-        valid_count++;
-        const distance_loc::Vec2 pos{est.x, est.y};
-        const double pred = ray::ray_distance_with_obstacles(
-            pos, heading_deg, sensors[i].offset, sensors[i].angle_deg, field.obstacles);
-        const double residual = std::fabs(pred - readings[static_cast<size_t>(i)]);
-        if (residual > gate_config_.max_sensor_residual_in) {
+    if (gate_enables.residual) {
+        int valid_count = 0;
+        const auto& sensors = engine_.config().sensors;
+        for (int i = 0; i < 4; ++i) {
+            if (readings[static_cast<size_t>(i)] < 0.0) continue;
+            valid_count++;
+            const distance_loc::Vec2 pos{est.x, est.y};
+            const double pred = ray::ray_distance_with_obstacles(
+                pos, heading_deg, sensors[i].offset, sensors[i].angle_deg, field.obstacles);
+            const double residual = std::fabs(pred - readings[static_cast<size_t>(i)]);
+            if (residual > gate_config_.max_sensor_residual_in) {
+                d.accepted = false;
+                d.failed_residual = true;
+                d.reason = "sensor residual gate";
+                emit_log("gate", nlohmann::json{ { "gate", gate_to_json(d) } });
+                return d;
+            }
+        }
+        if (valid_count < gate_config_.min_valid_sensors_for_residual) {
             d.accepted = false;
             d.failed_residual = true;
-            d.reason = "sensor residual gate";
+            d.reason = "insufficient valid sensors";
             emit_log("gate", nlohmann::json{ { "gate", gate_to_json(d) } });
             return d;
         }
     }
-    if (valid_count < gate_config_.min_valid_sensors_for_residual) {
-        d.accepted = false;
-        d.failed_residual = true;
-        d.reason = "insufficient valid sensors";
-        emit_log("gate", nlohmann::json{ { "gate", gate_to_json(d) } });
-        return d;
-    }
 
-    if (!wall_sum_ok(readings, heading_deg, field)) {
+    if (gate_enables.wall_sum && !wall_sum_ok(readings, heading_deg, field)) {
         d.accepted = false;
         d.failed_wall_sum = true;
         d.reason = "wall-sum gate";
