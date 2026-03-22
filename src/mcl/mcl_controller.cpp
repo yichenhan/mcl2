@@ -23,7 +23,7 @@ nlohmann::json gate_to_json(const GateDecision& gate) {
     return nlohmann::json{
         { "accepted", gate.accepted },
         { "failed_velocity", gate.failed_velocity },
-        { "failed_spread", gate.failed_spread },
+        { "failed_r90", gate.failed_r90 },
         { "failed_passability", gate.failed_passability },
         { "failed_residual", gate.failed_residual },
         { "failed_wall_sum", gate.failed_wall_sum },
@@ -191,11 +191,10 @@ GateDecision MCLController::gate_estimate(
     d.radius_90_in = cs.radius_90;
     d.spread_in = cs.spread;
 
-    if (gate_enables.spread &&
-        (cs.radius_90 > gate_config_.max_radius_90_in || cs.spread > gate_config_.max_spread_in)) {
+    if (gate_enables.r90 && cs.radius_90 > gate_config_.max_radius_90_in) {
         d.accepted = false;
-        d.failed_spread = true;
-        d.reason = "spread gate";
+        d.failed_r90 = true;
+        d.reason = "r90 gate";
         emit_log("gate", nlohmann::json{ { "gate", gate_to_json(d) } });
         return d;
     }

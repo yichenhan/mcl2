@@ -14,7 +14,6 @@ struct GateConfig {
     double max_estimate_speed_ft_per_s = 360.0 / 12.0;
     double max_jump_in = 12.0;
     double max_radius_90_in = 5.0;
-    double max_spread_in = 25.0;
     double max_sensor_residual_in = 6.0;
     double wall_sum_tolerance_in = 8.0;
     int min_valid_sensors_for_residual = 2;
@@ -22,7 +21,7 @@ struct GateConfig {
 
 struct GateEnables {
     bool velocity = true;
-    bool spread = true;
+    bool r90 = true;
     bool passability = true;
     bool residual = true;
     bool wall_sum = true;
@@ -31,7 +30,7 @@ struct GateEnables {
 struct GateDecision {
     bool accepted = true;
     bool failed_velocity = false;
-    bool failed_spread = false;
+    bool failed_r90 = false;
     bool failed_passability = false;
     bool failed_residual = false;
     bool failed_wall_sum = false;

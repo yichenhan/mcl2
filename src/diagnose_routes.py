@@ -79,7 +79,7 @@ def analyze_replay(path):
     gate_reject_count = 0
     gate_reject_ticks = []
     velocity_rejects = 0
-    spread_rejects = 0
+    r90_rejects = 0
     passability_rejects = 0
     residual_rejects = 0
     wall_sum_rejects = 0
@@ -89,7 +89,7 @@ def analyze_replay(path):
             gate_reject_count += 1
             gate_reject_ticks.append(t["tick"])
             if gd.get("failed_velocity"): velocity_rejects += 1
-            if gd.get("failed_spread"): spread_rejects += 1
+            if gd.get("failed_r90"): r90_rejects += 1
             if gd.get("failed_passability"): passability_rejects += 1
             if gd.get("failed_residual"): residual_rejects += 1
             if gd.get("failed_wall_sum"): wall_sum_rejects += 1
@@ -155,7 +155,7 @@ def analyze_replay(path):
         "gate_reject_count": gate_reject_count,
         "gate_reject_pct": round(100 * gate_reject_count / len(ticks), 1),
         "velocity_rejects": velocity_rejects,
-        "spread_rejects": spread_rejects,
+        "r90_rejects": r90_rejects,
         "passability_rejects": passability_rejects,
         "residual_rejects": residual_rejects,
         "wall_sum_rejects": wall_sum_rejects,
@@ -194,7 +194,7 @@ def print_report(r):
     print()
     print(f"  MCL error:  mean={r['mean_mcl_error']:.1f}in  max={r['max_mcl_error']:.1f}in @ tick {r['max_mcl_error_tick']}")
     print(f"  Gate rejects: {r['gate_reject_count']}/{r['total_ticks']} ({r['gate_reject_pct']}%)"
-          f"  [vel={r['velocity_rejects']} spr={r['spread_rejects']} pass={r['passability_rejects']}"
+          f"  [vel={r['velocity_rejects']} r90={r['r90_rejects']} pass={r['passability_rejects']}"
           f" res={r['residual_rejects']} wall={r['wall_sum_rejects']}]")
     print(f"  Update skipped: {r['update_skip_count']}/{r['total_ticks']}")
     print(f"  Accepted estimate stale: {r['stale_estimate_ticks']}/{r['total_ticks']} ({r['stale_estimate_pct']}%)")
@@ -227,8 +227,8 @@ def print_report(r):
                 reasons.append(f"gate rejection rate {r['gate_reject_pct']}% (controller steering on stale pose)")
             if r["velocity_rejects"] > r["total_ticks"] * 0.3:
                 reasons.append("velocity gate rejecting heavily (MCL hasn't converged)")
-            if r["spread_rejects"] > r["total_ticks"] * 0.1:
-                reasons.append("spread gate rejecting (particles too dispersed)")
+            if r["r90_rejects"] > r["total_ticks"] * 0.1:
+                reasons.append("r90 gate rejecting (particles too dispersed)")
             if r["failure_ticks"]:
                 reasons.append(f"sensor failures active: {r['failure_ticks']}")
             if not reasons:

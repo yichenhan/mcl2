@@ -145,7 +145,6 @@ TEST_CASE("LocalizationController applies velocity gate") {
     cfg.gate_config.max_estimate_speed_ft_per_s = 1.0;
     cfg.gate_config.max_jump_in = 100.0;
     cfg.gate_config.max_radius_90_in = 1e6;
-    cfg.gate_config.max_spread_in = 1e6;
     cfg.gate_config.max_sensor_residual_in = 1e6;
     cfg.gate_config.min_valid_sensors_for_residual = 0;
     cfg.gate_enables = {true, false, false, false, false};

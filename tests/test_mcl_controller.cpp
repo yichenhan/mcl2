@@ -25,7 +25,6 @@ TEST_CASE("MCLController rejects velocity jump") {
     gcfg.max_estimate_speed_ft_per_s = 1.0;
     gcfg.max_jump_in = 100.0;
     gcfg.max_radius_90_in = 1e6;
-    gcfg.max_spread_in = 1e6;
     gcfg.max_sensor_residual_in = 1e6;
     gcfg.min_valid_sensors_for_residual = 0;
 
@@ -41,14 +40,13 @@ TEST_CASE("MCLController rejects velocity jump") {
     CHECK(d.failed_velocity);
 }
 
-TEST_CASE("MCLController gate rejects spread ambiguity") {
+TEST_CASE("MCLController gate rejects high r90") {
     mcl::MCLConfig mcfg;
     mcfg.num_particles = 100;
     mcl::GateConfig gcfg;
     gcfg.max_estimate_speed_ft_per_s = 1e6;
     gcfg.max_jump_in = 1e6;
     gcfg.max_radius_90_in = 5.0;
-    gcfg.max_spread_in = 5.0;
     gcfg.max_sensor_residual_in = 1e6;
     gcfg.min_valid_sensors_for_residual = 0;
 
@@ -67,7 +65,7 @@ TEST_CASE("MCLController gate rejects spread ambiguity") {
     std::array<double, 4> readings{-1.0, -1.0, -1.0, -1.0};
     const auto d = c.gate_estimate(field, readings, 0.0, prev, 0.05);
     CHECK_FALSE(d.accepted);
-    CHECK(d.failed_spread);
+    CHECK(d.failed_r90);
 }
 
 TEST_CASE("MCLController gate rejects non-passable estimate") {
@@ -77,7 +75,6 @@ TEST_CASE("MCLController gate rejects non-passable estimate") {
     gcfg.max_estimate_speed_ft_per_s = 1e6;
     gcfg.max_jump_in = 1e6;
     gcfg.max_radius_90_in = 1e6;
-    gcfg.max_spread_in = 1e6;
     gcfg.max_sensor_residual_in = 1e6;
     gcfg.min_valid_sensors_for_residual = 0;
 
@@ -101,7 +98,6 @@ TEST_CASE("MCLController gate rejects high per-sensor residual") {
     gcfg.max_estimate_speed_ft_per_s = 1e6;
     gcfg.max_jump_in = 1e6;
     gcfg.max_radius_90_in = 1e6;
-    gcfg.max_spread_in = 1e6;
     gcfg.max_sensor_residual_in = 1.0;
     gcfg.min_valid_sensors_for_residual = 1;
 
@@ -124,7 +120,6 @@ TEST_CASE("MCLController wall-sum only enforced when pair exists") {
     gcfg.max_estimate_speed_ft_per_s = 1e6;
     gcfg.max_jump_in = 1e6;
     gcfg.max_radius_90_in = 1e6;
-    gcfg.max_spread_in = 1e6;
     gcfg.max_sensor_residual_in = 1e6;
     gcfg.min_valid_sensors_for_residual = 0;
     gcfg.wall_sum_tolerance_in = 1.0;
