@@ -27,7 +27,6 @@ nlohmann::json gate_to_json(const GateDecision& gate) {
         { "failed_passability", gate.failed_passability },
         { "failed_residual", gate.failed_residual },
         { "failed_wall_sum", gate.failed_wall_sum },
-        { "failed_cardinality", gate.failed_cardinality },
         { "jump_in", gate.jump_in },
         { "radius_90_in", gate.radius_90_in },
         { "spread_in", gate.spread_in },
@@ -256,18 +255,6 @@ GateDecision MCLController::gate_estimate(
         d.reason = "wall-sum gate";
         emit_log("gate", nlohmann::json{ { "gate", gate_to_json(d) } });
         return d;
-    }
-
-    if (gate_enables.cardinality) {
-        const double rem = std::fmod(std::fabs(heading_deg), 90.0);
-        const double deviation = std::min(rem, 90.0 - rem);
-        if (deviation > gate_config_.max_cardinality_deviation_deg) {
-            d.accepted = false;
-            d.failed_cardinality = true;
-            d.reason = "cardinality gate";
-            emit_log("gate", nlohmann::json{ { "gate", gate_to_json(d) } });
-            return d;
-        }
     }
 
     emit_log("gate", nlohmann::json{ { "gate", gate_to_json(d) } });
