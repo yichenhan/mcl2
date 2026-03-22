@@ -27,6 +27,7 @@ nlohmann::json gate_to_json(const GateDecision& gate) {
         { "failed_passability", gate.failed_passability },
         { "failed_residual", gate.failed_residual },
         { "failed_wall_sum", gate.failed_wall_sum },
+        { "failed_cardinality", gate.failed_cardinality },
         { "jump_in", gate.jump_in },
         { "radius_90_in", gate.radius_90_in },
         { "spread_in", gate.spread_in },
@@ -191,6 +192,15 @@ GateDecision MCLController::gate_estimate(
     d.radius_90_in = cs.radius_90;
     d.spread_in = cs.spread;
 
+    if (gate_enables.spread &&
+        (cs.radius_90 > gate_config_.max_radius_90_in || cs.spread > gate_config_.max_spread_in)) {
+        d.accepted = false;
+        d.failed_spread = true;
+        d.reason = "spread gate";
+        emit_log("gate", nlohmann::json{ { "gate", gate_to_json(d) } });
+        return d;
+    }
+
     const double dx = static_cast<double>(est.x) - static_cast<double>(prev_accepted.x);
     const double dy = static_cast<double>(est.y) - static_cast<double>(prev_accepted.y);
     d.jump_in = std::sqrt(dx * dx + dy * dy);
@@ -232,15 +242,6 @@ GateDecision MCLController::gate_estimate(
         return d;
     }
 
-    if (gate_enables.spread &&
-        (cs.radius_90 > gate_config_.max_radius_90_in || cs.spread > gate_config_.max_spread_in)) {
-        d.accepted = false;
-        d.failed_spread = true;
-        d.reason = "spread gate";
-        emit_log("gate", nlohmann::json{ { "gate", gate_to_json(d) } });
-        return d;
-    }
-
     if (gate_enables.passability && !field.is_passable(est.x, est.y)) {
         d.accepted = false;
         d.failed_passability = true;
@@ -256,6 +257,19 @@ GateDecision MCLController::gate_estimate(
         emit_log("gate", nlohmann::json{ { "gate", gate_to_json(d) } });
         return d;
     }
+
+    if (gate_enables.cardinality) {
+        const double rem = std::fmod(std::fabs(heading_deg), 90.0);
+        const double deviation = std::min(rem, 90.0 - rem);
+        if (deviation > gate_config_.max_cardinality_deviation_deg) {
+            d.accepted = false;
+            d.failed_cardinality = true;
+            d.reason = "cardinality gate";
+            emit_log("gate", nlohmann::json{ { "gate", gate_to_json(d) } });
+            return d;
+        }
+    }
+
     emit_log("gate", nlohmann::json{ { "gate", gate_to_json(d) } });
     return d;
 }

@@ -83,6 +83,7 @@ def analyze_replay(path):
     passability_rejects = 0
     residual_rejects = 0
     wall_sum_rejects = 0
+    cardinality_rejects = 0
     for t in ticks:
         gd = t.get("gate_decision", {})
         if not gd.get("accepted", True):
@@ -93,6 +94,7 @@ def analyze_replay(path):
             if gd.get("failed_passability"): passability_rejects += 1
             if gd.get("failed_residual"): residual_rejects += 1
             if gd.get("failed_wall_sum"): wall_sum_rejects += 1
+            if gd.get("failed_cardinality"): cardinality_rejects += 1
 
     # --- Update skip timeline ---
     update_skip_count = sum(1 for t in ticks if t.get("update_skipped"))
@@ -159,6 +161,7 @@ def analyze_replay(path):
         "passability_rejects": passability_rejects,
         "residual_rejects": residual_rejects,
         "wall_sum_rejects": wall_sum_rejects,
+        "cardinality_rejects": cardinality_rejects,
         "update_skip_count": update_skip_count,
         "failure_ticks": failure_ticks,
         "mean_mcl_error": round(mean_mcl, 2),
@@ -195,7 +198,7 @@ def print_report(r):
     print(f"  MCL error:  mean={r['mean_mcl_error']:.1f}in  max={r['max_mcl_error']:.1f}in @ tick {r['max_mcl_error_tick']}")
     print(f"  Gate rejects: {r['gate_reject_count']}/{r['total_ticks']} ({r['gate_reject_pct']}%)"
           f"  [vel={r['velocity_rejects']} spr={r['spread_rejects']} pass={r['passability_rejects']}"
-          f" res={r['residual_rejects']} wall={r['wall_sum_rejects']}]")
+          f" res={r['residual_rejects']} wall={r['wall_sum_rejects']} card={r['cardinality_rejects']}]")
     print(f"  Update skipped: {r['update_skip_count']}/{r['total_ticks']}")
     print(f"  Accepted estimate stale: {r['stale_estimate_ticks']}/{r['total_ticks']} ({r['stale_estimate_pct']}%)")
     print(f"  Robot physically stuck: {r['stuck_ticks']} ticks across {len(r['stuck_runs'])} runs"

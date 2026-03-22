@@ -92,7 +92,7 @@ TEST_CASE("LocalizationController computes odom deltas from absolute pose") {
     cfg.algorithm = mcl::LocAlgorithm::MCL;
     cfg.mcl_config.num_particles = 40;
     cfg.min_sensors_for_update = 5;
-    cfg.gate_enables = {false, false, false, false, false};
+    cfg.gate_enables = {false, false, false, false, false, false};
     mcl::LocalizationController c(cfg);
     set_all_particles(c, 0.0f, 0.0f);
 
@@ -148,7 +148,7 @@ TEST_CASE("LocalizationController applies velocity gate") {
     cfg.gate_config.max_spread_in = 1e6;
     cfg.gate_config.max_sensor_residual_in = 1e6;
     cfg.gate_config.min_valid_sensors_for_residual = 0;
-    cfg.gate_enables = {true, false, false, false, false};
+    cfg.gate_enables = {true, false, false, false, false, false};
     mcl::LocalizationController c(cfg);
     set_all_particles(c, 30.0f, 0.0f);
 
@@ -167,7 +167,7 @@ TEST_CASE("LocalizationController rejects large jumps when velocity gate enabled
     cfg.min_sensors_for_update = 5; // skip update path for determinism
     cfg.gate_config.max_estimate_speed_ft_per_s = 0.5;
     cfg.gate_config.max_jump_in = 100.0;
-    cfg.gate_enables = {true, false, false, false, false};
+    cfg.gate_enables = {true, false, false, false, false, false};
     mcl::LocalizationController c(cfg);
 
     // Force MCL estimate far from odom; velocity gate should reject this correction.

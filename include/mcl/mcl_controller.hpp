@@ -18,6 +18,7 @@ struct GateConfig {
     double max_sensor_residual_in = 6.0;
     double wall_sum_tolerance_in = 8.0;
     int min_valid_sensors_for_residual = 2;
+    double max_cardinality_deviation_deg = 15.0;
 };
 
 struct GateEnables {
@@ -26,6 +27,7 @@ struct GateEnables {
     bool passability = true;
     bool residual = true;
     bool wall_sum = true;
+    bool cardinality = true;
 };
 
 struct GateDecision {
@@ -35,6 +37,7 @@ struct GateDecision {
     bool failed_passability = false;
     bool failed_residual = false;
     bool failed_wall_sum = false;
+    bool failed_cardinality = false;
     double jump_in = 0.0;
     double radius_90_in = 0.0;
     double spread_in = 0.0;

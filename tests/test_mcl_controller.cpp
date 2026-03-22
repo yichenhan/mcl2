@@ -146,3 +146,59 @@ TEST_CASE("MCLController wall-sum only enforced when pair exists") {
     CHECK_FALSE(bad.accepted);
     CHECK(bad.failed_wall_sum);
 }
+
+TEST_CASE("MCLController gate rejects non-cardinal heading") {
+    mcl::MCLConfig mcfg;
+    mcfg.num_particles = 100;
+    mcl::GateConfig gcfg;
+    gcfg.max_estimate_speed_ft_per_s = 1e6;
+    gcfg.max_jump_in = 1e6;
+    gcfg.max_radius_90_in = 1e6;
+    gcfg.max_spread_in = 1e6;
+    gcfg.max_sensor_residual_in = 1e6;
+    gcfg.min_valid_sensors_for_residual = 0;
+    gcfg.max_cardinality_deviation_deg = 15.0;
+
+    mcl::MCLController c(mcfg, gcfg);
+    c.initialize_uniform(6);
+    set_all_particles_to(c, 0.0f, 0.0f);
+
+    sim::Field field;
+    mcl::Estimate prev{0.0f, 0.0f};
+    std::array<double, 4> readings{-1.0, -1.0, -1.0, -1.0};
+
+    mcl::GateEnables enables;
+    enables.cardinality = true;
+    enables.velocity = false;
+    enables.spread = false;
+    enables.passability = false;
+    enables.residual = false;
+    enables.wall_sum = false;
+
+    SUBCASE("heading 45 deg rejected") {
+        const auto d = c.gate_estimate(field, readings, 45.0, prev, 0.05, enables);
+        CHECK_FALSE(d.accepted);
+        CHECK(d.failed_cardinality);
+    }
+
+    SUBCASE("heading 0 deg accepted") {
+        const auto d = c.gate_estimate(field, readings, 0.0, prev, 0.05, enables);
+        CHECK(d.accepted);
+    }
+
+    SUBCASE("heading 90 deg accepted") {
+        const auto d = c.gate_estimate(field, readings, 90.0, prev, 0.05, enables);
+        CHECK(d.accepted);
+    }
+
+    SUBCASE("heading 10 deg accepted (within tolerance)") {
+        const auto d = c.gate_estimate(field, readings, 10.0, prev, 0.05, enables);
+        CHECK(d.accepted);
+    }
+
+    SUBCASE("heading 135 deg rejected") {
+        const auto d = c.gate_estimate(field, readings, 135.0, prev, 0.05, enables);
+        CHECK_FALSE(d.accepted);
+        CHECK(d.failed_cardinality);
+    }
+}
