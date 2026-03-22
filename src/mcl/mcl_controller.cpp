@@ -195,33 +195,6 @@ GateDecision MCLController::gate_estimate(
     const double dy = static_cast<double>(est.y) - static_cast<double>(prev_accepted.y);
     d.jump_in = std::sqrt(dx * dx + dy * dy);
 
-    const double safe_dt = std::max(dt_sec, 1e-6);
-    const double speed_ft_per_s = (d.jump_in / 12.0) / safe_dt;
-    if (gate_enables.velocity && speed_ft_per_s > gate_config_.max_estimate_speed_ft_per_s) {
-        d.accepted = false;
-        d.failed_velocity = true;
-        d.reason = "velocity gate";
-        emit_log("gate", nlohmann::json{ { "gate", gate_to_json(d) } });
-        return d;
-    }
-
-    if (gate_enables.spread &&
-        (cs.radius_90 > gate_config_.max_radius_90_in || cs.spread > gate_config_.max_spread_in)) {
-        d.accepted = false;
-        d.failed_spread = true;
-        d.reason = "spread gate";
-        emit_log("gate", nlohmann::json{ { "gate", gate_to_json(d) } });
-        return d;
-    }
-
-    if (gate_enables.passability && !field.is_passable(est.x, est.y)) {
-        d.accepted = false;
-        d.failed_passability = true;
-        d.reason = "passability gate";
-        emit_log("gate", nlohmann::json{ { "gate", gate_to_json(d) } });
-        return d;
-    }
-
     if (gate_enables.residual) {
         int valid_count = 0;
         const auto& sensors = engine_.config().sensors;
@@ -247,6 +220,33 @@ GateDecision MCLController::gate_estimate(
             emit_log("gate", nlohmann::json{ { "gate", gate_to_json(d) } });
             return d;
         }
+    }
+
+    const double safe_dt = std::max(dt_sec, 1e-6);
+    const double speed_ft_per_s = (d.jump_in / 12.0) / safe_dt;
+    if (gate_enables.velocity && speed_ft_per_s > gate_config_.max_estimate_speed_ft_per_s) {
+        d.accepted = false;
+        d.failed_velocity = true;
+        d.reason = "velocity gate";
+        emit_log("gate", nlohmann::json{ { "gate", gate_to_json(d) } });
+        return d;
+    }
+
+    if (gate_enables.spread &&
+        (cs.radius_90 > gate_config_.max_radius_90_in || cs.spread > gate_config_.max_spread_in)) {
+        d.accepted = false;
+        d.failed_spread = true;
+        d.reason = "spread gate";
+        emit_log("gate", nlohmann::json{ { "gate", gate_to_json(d) } });
+        return d;
+    }
+
+    if (gate_enables.passability && !field.is_passable(est.x, est.y)) {
+        d.accepted = false;
+        d.failed_passability = true;
+        d.reason = "passability gate";
+        emit_log("gate", nlohmann::json{ { "gate", gate_to_json(d) } });
+        return d;
     }
 
     if (gate_enables.wall_sum && !wall_sum_ok(readings, heading_deg, field)) {
