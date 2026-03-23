@@ -73,6 +73,7 @@ void MCLController::update(const double readings[4], double heading_deg) {
 
 void MCLController::resample() {
     engine_.resample();
+    emit_log(
         "post_resample",
         nlohmann::json{
             { "post_resample", snapshot_json() },

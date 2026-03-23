@@ -1,5 +1,6 @@
 #include "doctest/doctest.h"
 #include "pursuit/pure_pursuit.hpp"
+#include <cmath>
 
 using namespace pursuit;
 
