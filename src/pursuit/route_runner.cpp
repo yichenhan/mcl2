@@ -3,12 +3,61 @@
 #include "nlohmann/json.hpp"
 #include "state/session_recorder.hpp"
 
+#include <cstdio>
 #include <cmath>
+#include <filesystem>
+#include <fstream>
 #include <sstream>
 
 namespace pursuit {
 
-RouteResult RouteRunner::run(const RouteDefinition& route, const std::string& replay_dir) {
+namespace {
+
+bool write_mcl_replay_atomic(
+    const std::string& directory,
+    const std::string& file_stem,
+    const sim::Field& field,
+    const std::vector<mcl::MCLTickResult>& ticks) {
+    if (directory.empty()) return false;
+    std::error_code ec;
+    std::filesystem::create_directories(directory, ec);
+    if (ec) return false;
+
+    nlohmann::json j;
+    j["session_id"] = file_stem;
+    j["total_ticks"] = ticks.size();
+    j["field_half"] = field.field_half;
+    j["obstacles"] = nlohmann::json::array();
+    for (const auto& o : field.obstacles) {
+        j["obstacles"].push_back({
+            {"min_x", o.min_x},
+            {"min_y", o.min_y},
+            {"max_x", o.max_x},
+            {"max_y", o.max_y},
+        });
+    }
+    j["ticks"] = ticks;
+
+    const std::string final_path = directory + "/" + file_stem + ".json";
+    const std::string tmp_path = final_path + ".tmp";
+    std::ofstream out(tmp_path, std::ios::trunc);
+    if (!out.is_open()) return false;
+    out << j.dump(2);
+    out.close();
+    if (!out) return false;
+    if (std::rename(tmp_path.c_str(), final_path.c_str()) != 0) {
+        std::remove(tmp_path.c_str());
+        return false;
+    }
+    return true;
+}
+
+} // namespace
+
+RouteResult RouteRunner::run(
+    const RouteDefinition& route,
+    const std::string& replay_dir,
+    const std::string& mcl_replay_dir) {
     RouteResult result;
     result.route_name = route.name;
     result.seed = route.failure_seed;
@@ -92,6 +141,7 @@ RouteResult RouteRunner::run(const RouteDefinition& route, const std::string& re
     if (recorder.write_atomic()) {
         result.replay_file = sid.str() + ".json";
     }
+    write_mcl_replay_atomic(mcl_replay_dir, sid.str(), cfg.field, session.mcl_history());
     return result;
 }
 

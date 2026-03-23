@@ -8,12 +8,13 @@
 
 int main(int argc, char** argv) {
     if (argc < 2) {
-        std::cerr << "Usage: ./route_bin <route.json> [--seed N] [--replay-dir DIR]\n";
+        std::cerr << "Usage: ./route_bin <route.json> [--seed N] [--replay-dir DIR] [--mcl-replay-dir DIR]\n";
         return 1;
     }
 
     std::string route_path = argv[1];
     std::string replay_dir = "../replays";
+    std::string mcl_replay_dir = "../replay_mcl";
     bool seed_override = false;
     uint64_t seed_value = 42;
 
@@ -28,6 +29,10 @@ int main(int argc, char** argv) {
             replay_dir = argv[++i];
             continue;
         }
+        if (arg == "--mcl-replay-dir" && i + 1 < argc) {
+            mcl_replay_dir = argv[++i];
+            continue;
+        }
     }
 
     try {
@@ -35,7 +40,7 @@ int main(int argc, char** argv) {
         if (seed_override) route.failure_seed = seed_value;
 
         pursuit::RouteRunner runner;
-        const pursuit::RouteResult result = runner.run(route, replay_dir);
+        const pursuit::RouteResult result = runner.run(route, replay_dir, mcl_replay_dir);
         std::cout << "Route: " << result.route_name << "\n";
         std::cout << "Seed: " << result.seed << "\n";
         std::cout << "Ticks: " << result.total_ticks << "\n";

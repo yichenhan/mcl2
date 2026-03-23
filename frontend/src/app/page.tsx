@@ -51,6 +51,9 @@ export default function Home() {
           <Link className="rounded bg-zinc-800 px-3 py-1 text-sm" href="/replay">
             Replay
           </Link>
+          <Link className="rounded bg-zinc-800 px-3 py-1 text-sm" href="/mcl-replay">
+            MCL Replays
+          </Link>
         </div>
       </div>
 

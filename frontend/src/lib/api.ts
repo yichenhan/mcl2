@@ -2,6 +2,7 @@ import type {
   Action,
   RouteDefinition,
   RouteRunResult,
+  MCLTickResult,
   SessionConfigResponse,
   SessionStartRequest,
   SessionStartResponse,
@@ -56,8 +57,8 @@ export const api = {
 
   closeSession(
     sessionId: string,
-  ): Promise<{ saved: boolean; ticks: number; path: string }> {
-    return request<{ saved: boolean; ticks: number; path: string }>(
+  ): Promise<{ saved: boolean; saved_mcl?: boolean; ticks: number; path: string }> {
+    return request<{ saved: boolean; saved_mcl?: boolean; ticks: number; path: string }>(
       `/api/session/${sessionId}`,
       { method: "DELETE" },
     );
@@ -76,6 +77,22 @@ export const api = {
   getReplayTicks(file: string, from: number, to: number): Promise<TickState[]> {
     return request<TickState[]>(
       `/api/replays/${encodeURIComponent(file)}/ticks?from=${from}&to=${to}`,
+    );
+  },
+
+  listMCLReplays(): Promise<string[]> {
+    return request<string[]>("/api/mcl-replays");
+  },
+
+  getMCLReplayMeta(file: string): Promise<Record<string, unknown>> {
+    return request<Record<string, unknown>>(
+      `/api/mcl-replays/${encodeURIComponent(file)}/meta`,
+    );
+  },
+
+  getMCLReplayTicks(file: string, from: number, to: number): Promise<MCLTickResult[]> {
+    return request<MCLTickResult[]>(
+      `/api/mcl-replays/${encodeURIComponent(file)}/ticks?from=${from}&to=${to}`,
     );
   },
 

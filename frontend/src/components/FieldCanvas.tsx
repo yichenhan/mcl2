@@ -3,13 +3,15 @@
 import { useEffect, useMemo, useRef } from "react";
 
 import { parseFailures } from "@/lib/failures";
-import type { AABB, MCLSnapshot, TickState } from "@/lib/types";
+import { isTickState } from "@/lib/types";
+import type { AABB, AnyTick, MCLSnapshot } from "@/lib/types";
 import type { Stage } from "@/components/StageStepper";
 
 interface Props {
-  tick: TickState | null;
+  tick: AnyTick | null;
   stage: Stage;
   obstacles: AABB[];
+  fieldHalf?: number;
   waypoints?: { x: number; y: number }[];
   currentWaypointIdx?: number;
   prevGroundTruth?: { x: number; y: number } | null;
@@ -23,7 +25,7 @@ function headingToDir(headingDeg: number) {
   return { x: Math.sin(h), y: Math.cos(h) };
 }
 
-function pickSnapshot(tick: TickState, stage: Stage): MCLSnapshot {
+function pickSnapshot(tick: AnyTick, stage: Stage): MCLSnapshot {
   if (stage === "post_predict") return tick.post_predict;
   if (stage === "post_update") return tick.post_update;
   return tick.post_resample;
@@ -33,6 +35,7 @@ export function FieldCanvas({
   tick,
   stage,
   obstacles,
+  fieldHalf,
   waypoints,
   currentWaypointIdx,
   prevGroundTruth,
@@ -40,9 +43,10 @@ export function FieldCanvas({
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const selected = useMemo(() => (tick ? pickSnapshot(tick, stage) : null), [tick, stage]);
+  const activeFieldHalf = fieldHalf ?? FIELD_HALF;
   const parsedFailures = useMemo(
-    () => parseFailures(tick?.active_failures ?? []),
-    [tick?.active_failures],
+    () => (tick && isTickState(tick) ? parseFailures(tick.active_failures) : []),
+    [tick],
   );
 
   useEffect(() => {
@@ -59,7 +63,7 @@ export function FieldCanvas({
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     const pad = 16;
-    const span = FIELD_HALF * 2;
+    const span = activeFieldHalf * 2;
     const scale = Math.min((width - 2 * pad) / span, (height - 2 * pad) / span);
     const toCanvas = (x: number, y: number) => ({
       x: width / 2 + x * scale,
@@ -72,11 +76,11 @@ export function FieldCanvas({
 
     ctx.strokeStyle = "#1f2a44";
     ctx.lineWidth = 1;
-    for (let v = -72; v <= 72; v += 12) {
-      const p0 = toCanvas(v, -72);
-      const p1 = toCanvas(v, 72);
-      const p2 = toCanvas(-72, v);
-      const p3 = toCanvas(72, v);
+    for (let v = -activeFieldHalf; v <= activeFieldHalf; v += 12) {
+      const p0 = toCanvas(v, -activeFieldHalf);
+      const p1 = toCanvas(v, activeFieldHalf);
+      const p2 = toCanvas(-activeFieldHalf, v);
+      const p3 = toCanvas(activeFieldHalf, v);
       ctx.beginPath();
       ctx.moveTo(p0.x, p0.y);
       ctx.lineTo(p1.x, p1.y);
@@ -89,8 +93,8 @@ export function FieldCanvas({
 
     ctx.strokeStyle = "#d4d4d8";
     ctx.lineWidth = 2;
-    const tl = toCanvas(-72, 72);
-    const br = toCanvas(72, -72);
+    const tl = toCanvas(-activeFieldHalf, activeFieldHalf);
+    const br = toCanvas(activeFieldHalf, -activeFieldHalf);
     ctx.strokeRect(tl.x, tl.y, br.x - tl.x, br.y - tl.y);
 
     ctx.fillStyle = "rgba(251, 146, 60, 0.45)";
@@ -153,104 +157,135 @@ export function FieldCanvas({
     ctx.lineTo(est.x, est.y + 8);
     ctx.stroke();
 
-    const gt = tick.ground_truth;
-    const robot = toCanvas(gt.x, gt.y);
-    const dir = headingToDir(gt.heading_deg);
-    const perp = { x: dir.y, y: -dir.x };
-    const front = toCanvas(gt.x + dir.x * 3, gt.y + dir.y * 3);
-    const left = toCanvas(gt.x - dir.x * 2 + perp.x * 2, gt.y - dir.y * 2 + perp.y * 2);
-    const right = toCanvas(gt.x - dir.x * 2 - perp.x * 2, gt.y - dir.y * 2 - perp.y * 2);
-    const hasKidnap = parsedFailures.some((f) => f.type === "kidnap");
-    const hasOdomSpike = parsedFailures.some((f) => f.type === "odom_spike");
-    const hasHeadingBias = parsedFailures.some((f) => f.type === "heading_bias");
-    ctx.fillStyle = hasKidnap ? "#ef4444" : "#22c55e";
-    ctx.beginPath();
-    ctx.moveTo(front.x, front.y);
-    ctx.lineTo(left.x, left.y);
-    ctx.lineTo(right.x, right.y);
-    ctx.closePath();
-    ctx.fill();
+    if (isTickState(tick)) {
+      const gt = tick.ground_truth;
+      const robot = toCanvas(gt.x, gt.y);
+      const dir = headingToDir(gt.heading_deg);
+      const perp = { x: dir.y, y: -dir.x };
+      const front = toCanvas(gt.x + dir.x * 3, gt.y + dir.y * 3);
+      const left = toCanvas(gt.x - dir.x * 2 + perp.x * 2, gt.y - dir.y * 2 + perp.y * 2);
+      const right = toCanvas(gt.x - dir.x * 2 - perp.x * 2, gt.y - dir.y * 2 - perp.y * 2);
+      const hasKidnap = parsedFailures.some((f) => f.type === "kidnap");
+      const hasOdomSpike = parsedFailures.some((f) => f.type === "odom_spike");
+      const hasHeadingBias = parsedFailures.some((f) => f.type === "heading_bias");
+      ctx.fillStyle = hasKidnap ? "#ef4444" : "#22c55e";
+      ctx.beginPath();
+      ctx.moveTo(front.x, front.y);
+      ctx.lineTo(left.x, left.y);
+      ctx.lineTo(right.x, right.y);
+      ctx.closePath();
+      ctx.fill();
 
-    if (hasOdomSpike) {
-      ctx.fillStyle = "rgba(234, 179, 8, 0.25)";
-      for (let i = 0; i < 3; i++) {
-        const jitter = i - 1;
-        ctx.beginPath();
-        ctx.moveTo(front.x + jitter, front.y + jitter);
-        ctx.lineTo(left.x + jitter, left.y + jitter);
-        ctx.lineTo(right.x + jitter, right.y + jitter);
-        ctx.closePath();
-        ctx.fill();
+      if (hasOdomSpike) {
+        ctx.fillStyle = "rgba(234, 179, 8, 0.25)";
+        for (let i = 0; i < 3; i++) {
+          const jitter = i - 1;
+          ctx.beginPath();
+          ctx.moveTo(front.x + jitter, front.y + jitter);
+          ctx.lineTo(left.x + jitter, left.y + jitter);
+          ctx.lineTo(right.x + jitter, right.y + jitter);
+          ctx.closePath();
+          ctx.fill();
+        }
       }
-    }
 
-    if (hasHeadingBias) {
-      const f = parsedFailures.find((x) => x.type === "heading_bias");
-      const bias = f?.param ?? 0;
-      const start = (gt.heading_deg * Math.PI) / 180;
-      const end = ((gt.heading_deg + bias) * Math.PI) / 180;
-      ctx.strokeStyle = "#a855f7";
-      ctx.lineWidth = 2;
-      ctx.setLineDash([4, 3]);
-      ctx.beginPath();
-      ctx.arc(robot.x, robot.y, 18, -start + Math.PI / 2, -end + Math.PI / 2, bias > 0);
-      ctx.stroke();
-      ctx.setLineDash([]);
-    }
-
-    if (hasKidnap && prevGroundTruth) {
-      const prev = toCanvas(prevGroundTruth.x, prevGroundTruth.y);
-      ctx.strokeStyle = "#ef4444";
-      ctx.lineWidth = 2;
-      ctx.setLineDash([4, 4]);
-      ctx.beginPath();
-      ctx.moveTo(prev.x, prev.y);
-      ctx.lineTo(robot.x, robot.y);
-      ctx.stroke();
-      ctx.setLineDash([]);
-    }
-
-    const angles = [-90, 90, 0, 180];
-    ctx.setLineDash([4, 4]);
-    tick.observed_readings.forEach((dist, i) => {
-      const dead = parsedFailures.some((f) => f.type === "sensor_dead" && f.sensor === i);
-      const stuck = parsedFailures.some((f) => f.type === "sensor_stuck" && f.sensor === i);
-      const spurious = parsedFailures.some((f) => f.type === "spurious_reflection" && f.sensor === i);
-      const total = gt.heading_deg + angles[i];
-      const d = headingToDir(total);
-      if (dead || dist < 0) {
-        const px = toCanvas(gt.x + d.x * 6, gt.y + d.y * 6);
-        ctx.strokeStyle = "#f97316";
+      if (hasHeadingBias) {
+        const f = parsedFailures.find((x) => x.type === "heading_bias");
+        const bias = f?.param ?? 0;
+        const start = (gt.heading_deg * Math.PI) / 180;
+        const end = ((gt.heading_deg + bias) * Math.PI) / 180;
+        ctx.strokeStyle = "#a855f7";
         ctx.lineWidth = 2;
+        ctx.setLineDash([4, 3]);
         ctx.beginPath();
-        ctx.moveTo(px.x - 4, px.y - 4);
-        ctx.lineTo(px.x + 4, px.y + 4);
-        ctx.moveTo(px.x + 4, px.y - 4);
-        ctx.lineTo(px.x - 4, px.y + 4);
+        ctx.arc(robot.x, robot.y, 18, -start + Math.PI / 2, -end + Math.PI / 2, bias > 0);
         ctx.stroke();
-        return;
+        ctx.setLineDash([]);
       }
 
-      const end = toCanvas(gt.x + d.x * dist, gt.y + d.y * dist);
-      ctx.strokeStyle = spurious ? "#ef4444" : stuck ? "#71717a" : "#f59e0b";
-      ctx.setLineDash(spurious || stuck ? [] : [4, 4]);
-      ctx.beginPath();
-      ctx.moveTo(robot.x, robot.y);
-      ctx.lineTo(end.x, end.y);
-      ctx.stroke();
-      if (spurious) {
+      if (hasKidnap && prevGroundTruth) {
+        const prev = toCanvas(prevGroundTruth.x, prevGroundTruth.y);
         ctx.strokeStyle = "#ef4444";
+        ctx.lineWidth = 2;
+        ctx.setLineDash([4, 4]);
         ctx.beginPath();
-        ctx.moveTo(end.x, end.y - 4);
-        ctx.lineTo(end.x + 4, end.y);
-        ctx.lineTo(end.x, end.y + 4);
-        ctx.lineTo(end.x - 4, end.y);
-        ctx.closePath();
+        ctx.moveTo(prev.x, prev.y);
+        ctx.lineTo(robot.x, robot.y);
         ctx.stroke();
+        ctx.setLineDash([]);
       }
-    });
-    ctx.setLineDash([]);
-  }, [currentWaypointIdx, obstacles, parsedFailures, prevGroundTruth, selected, stage, tick, waypoints]);
+
+      const angles = [-90, 90, 0, 180];
+      ctx.setLineDash([4, 4]);
+      tick.observed_readings.forEach((dist, i) => {
+        const dead = parsedFailures.some((f) => f.type === "sensor_dead" && f.sensor === i);
+        const stuck = parsedFailures.some((f) => f.type === "sensor_stuck" && f.sensor === i);
+        const spurious = parsedFailures.some((f) => f.type === "spurious_reflection" && f.sensor === i);
+        const total = gt.heading_deg + angles[i];
+        const d = headingToDir(total);
+        if (dead || dist < 0) {
+          const px = toCanvas(gt.x + d.x * 6, gt.y + d.y * 6);
+          ctx.strokeStyle = "#f97316";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(px.x - 4, px.y - 4);
+          ctx.lineTo(px.x + 4, px.y + 4);
+          ctx.moveTo(px.x + 4, px.y - 4);
+          ctx.lineTo(px.x - 4, px.y + 4);
+          ctx.stroke();
+          return;
+        }
+
+        const end = toCanvas(gt.x + d.x * dist, gt.y + d.y * dist);
+        ctx.strokeStyle = spurious ? "#ef4444" : stuck ? "#71717a" : "#f59e0b";
+        ctx.setLineDash(spurious || stuck ? [] : [4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(robot.x, robot.y);
+        ctx.lineTo(end.x, end.y);
+        ctx.stroke();
+        if (spurious) {
+          ctx.strokeStyle = "#ef4444";
+          ctx.beginPath();
+          ctx.moveTo(end.x, end.y - 4);
+          ctx.lineTo(end.x + 4, end.y);
+          ctx.lineTo(end.x, end.y + 4);
+          ctx.lineTo(end.x - 4, end.y);
+          ctx.closePath();
+          ctx.stroke();
+        }
+      });
+      ctx.setLineDash([]);
+    } else {
+      const raw = toCanvas(tick.raw_estimate.x, tick.raw_estimate.y);
+      const rawDir = headingToDir(tick.raw_estimate.theta);
+      const rawFront = toCanvas(
+        tick.raw_estimate.x + rawDir.x * 4,
+        tick.raw_estimate.y + rawDir.y * 4,
+      );
+      const rawBack = toCanvas(
+        tick.raw_estimate.x - rawDir.x * 3,
+        tick.raw_estimate.y - rawDir.y * 3,
+      );
+      ctx.strokeStyle = "#f97316";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(raw.x, raw.y, 5, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(rawBack.x, rawBack.y);
+      ctx.lineTo(rawFront.x, rawFront.y);
+      ctx.stroke();
+    }
+  }, [
+    activeFieldHalf,
+    currentWaypointIdx,
+    obstacles,
+    parsedFailures,
+    prevGroundTruth,
+    selected,
+    tick,
+    waypoints,
+  ]);
 
   const kidnapActive = parsedFailures.some((f) => f.type === "kidnap");
 

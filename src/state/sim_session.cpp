@@ -44,17 +44,6 @@ std::array<double, 4> SimSession::read_sensors(const sim::RobotState& s) {
     return readings;
 }
 
-MCLSnapshot SimSession::snapshot_from_mcl() const {
-    MCLSnapshot snap;
-    snap.particles = mcl_.particles();
-    const auto cs = mcl_.cluster_stats();
-    snap.estimate = cs.centroid;
-    snap.n_eff = mcl_.n_eff();
-    snap.spread = cs.spread;
-    snap.radius_90 = cs.radius_90;
-    return snap;
-}
-
 mcl::GateDecision SimSession::gate_estimate_for_control(
     const mcl::Estimate& prev_accepted,
     const TickState& tick) const {
@@ -98,23 +87,35 @@ TickState SimSession::process_step(const sim::StepResult& step) {
     failure_injector_.apply(tick_, readings, noisy_odom, observed_heading);
     observed_heading = wrap_heading(observed_heading);
 
-    mcl_.predict(noisy_odom.forward_in, noisy_odom.rotation_deg, observed_heading, noisy_odom.lateral_in);
-    MCLSnapshot post_predict = snapshot_from_mcl();
+    const mcl::MCLTickResult mcl_tick = mcl_.tick(
+        noisy_odom.forward_in,
+        noisy_odom.rotation_deg,
+        observed_heading,
+        noisy_odom.lateral_in,
+        readings,
+        config_.min_sensors_for_update);
+    mcl_history_.push_back(mcl_tick);
 
-    int valid_count = 0;
-    for (double r : readings) {
-        if (r >= 0.0) valid_count++;
-    }
+    MCLSnapshot post_predict;
+    post_predict.particles = mcl_tick.post_predict.particles;
+    post_predict.estimate = mcl_tick.post_predict.estimate;
+    post_predict.n_eff = mcl_tick.post_predict.n_eff;
+    post_predict.spread = mcl_tick.post_predict.spread;
+    post_predict.radius_90 = mcl_tick.post_predict.radius_90;
 
-    const bool skip_update = (valid_count < config_.min_sensors_for_update);
+    MCLSnapshot post_update;
+    post_update.particles = mcl_tick.post_update.particles;
+    post_update.estimate = mcl_tick.post_update.estimate;
+    post_update.n_eff = mcl_tick.post_update.n_eff;
+    post_update.spread = mcl_tick.post_update.spread;
+    post_update.radius_90 = mcl_tick.post_update.radius_90;
 
-    if (!skip_update) {
-        mcl_.update(readings.data(), observed_heading);
-    }
-    MCLSnapshot post_update = snapshot_from_mcl();
-
-    mcl_.resample();
-    MCLSnapshot post_resample = snapshot_from_mcl();
+    MCLSnapshot post_resample;
+    post_resample.particles = mcl_tick.post_resample.particles;
+    post_resample.estimate = mcl_tick.post_resample.estimate;
+    post_resample.n_eff = mcl_tick.post_resample.n_eff;
+    post_resample.spread = mcl_tick.post_resample.spread;
+    post_resample.radius_90 = mcl_tick.post_resample.radius_90;
 
     TickState out;
     out.tick = tick_;
@@ -127,8 +128,8 @@ TickState SimSession::process_step(const sim::StepResult& step) {
     out.post_resample = std::move(post_resample);
     out.mcl_error = euclidean(out.post_resample.estimate.x, out.post_resample.estimate.y, truth.x, truth.y);
     out.odom_error = euclidean(odom_state_.x, odom_state_.y, truth.x, truth.y);
-    out.valid_sensor_count = valid_count;
-    out.update_skipped = skip_update;
+    out.valid_sensor_count = mcl_tick.valid_sensor_count;
+    out.update_skipped = mcl_tick.update_skipped;
     out.pose_gated = (out.post_resample.radius_90 > config_.pose_gate_radius_90);
 
     history_.push_back(out);
@@ -142,6 +143,15 @@ const SimSessionConfig& SimSession::config() const {
 
 const std::vector<TickState>& SimSession::history() const {
     return history_;
+}
+
+const std::vector<mcl::MCLTickResult>& SimSession::mcl_history() const {
+    return mcl_history_;
+}
+
+const mcl::MCLTickResult* SimSession::latest_mcl_tick() const {
+    if (mcl_history_.empty()) return nullptr;
+    return &mcl_history_.back();
 }
 
 int SimSession::current_tick() const {

@@ -14,12 +14,6 @@ namespace mcl {
 
 enum class LocAlgorithm { MCL, RayWall };
 
-struct Pose {
-    double x = 0.0;
-    double y = 0.0;
-    double theta = 0.0;
-};
-
 struct TickInput {
     distance_loc::DistanceReadings sensors{};
     struct OdomPose {
@@ -30,30 +24,13 @@ struct TickInput {
     double imu_heading_deg = 0.0;
 };
 
-struct PhaseSnapshot {
-    std::vector<Particle> particles;
-    Estimate estimate{ 0.0f, 0.0f };
-    double n_eff = 0.0;
-    double spread = 0.0;
-    double radius_90 = 0.0;
-};
-
-struct TickOutput {
+struct TickOutput : MCLTickResult {
     Pose accepted_pose{};
-    Pose raw_estimate{};
-    GateDecision gate{};
     std::string timestamp_iso;
     LocAlgorithm algorithm_used = LocAlgorithm::MCL;
     double correction_distance_in = 0.0;
     bool correction_applied = false;
-    int valid_sensor_count = 0;
-    bool update_skipped = false;
-    ClusterStats cluster_stats{ 0.0, 0.0, Estimate{ 0.0f, 0.0f } };
-    double n_eff = 0.0;
     distance_loc::DistanceLocResult raywall_result{};
-    PhaseSnapshot post_predict{};
-    PhaseSnapshot post_update{};
-    PhaseSnapshot post_resample{};
 };
 
 struct ControllerConfig {

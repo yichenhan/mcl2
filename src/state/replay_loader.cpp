@@ -31,6 +31,10 @@ std::vector<std::string> ReplayLoader::list_replays(const std::string& directory
     return out;
 }
 
+std::vector<std::string> ReplayLoader::list_mcl_replays(const std::string& directory) {
+    return list_replays(directory);
+}
+
 nlohmann::json ReplayLoader::load_metadata(const std::string& path) {
     const nlohmann::json j = read_json_file(path);
     if (!j.is_object()) return nlohmann::json::object();
@@ -38,6 +42,17 @@ nlohmann::json ReplayLoader::load_metadata(const std::string& path) {
     out["session_id"] = j.value("session_id", "");
     out["total_ticks"] = j.value("total_ticks", 0);
     out["config"] = j.value("config", nlohmann::json::object());
+    out["obstacles"] = j.value("obstacles", nlohmann::json::array());
+    return out;
+}
+
+nlohmann::json ReplayLoader::load_mcl_metadata(const std::string& path) {
+    const nlohmann::json j = read_json_file(path);
+    if (!j.is_object()) return nlohmann::json::object();
+    nlohmann::json out;
+    out["session_id"] = j.value("session_id", "");
+    out["total_ticks"] = j.value("total_ticks", 0);
+    out["field_half"] = j.value("field_half", 72.0);
     out["obstacles"] = j.value("obstacles", nlohmann::json::array());
     return out;
 }
@@ -58,6 +73,26 @@ std::vector<TickState> ReplayLoader::load_ticks(const std::string& path, int fro
     out.reserve(static_cast<size_t>(to - from));
     for (int i = from; i < to; ++i) {
         out.push_back(ticks[static_cast<size_t>(i)].get<TickState>());
+    }
+    return out;
+}
+
+std::vector<mcl::MCLTickResult> ReplayLoader::load_mcl_ticks(const std::string& path, int from, int to) {
+    std::vector<mcl::MCLTickResult> out;
+    const nlohmann::json j = read_json_file(path);
+    if (!j.is_object() || !j.contains("ticks") || !j["ticks"].is_array()) return out;
+
+    const auto& ticks = j["ticks"];
+    const int size = static_cast<int>(ticks.size());
+    if (size == 0) return out;
+
+    from = std::max(0, from);
+    to = std::min(size, to);
+    if (from >= to) return out;
+
+    out.reserve(static_cast<size_t>(to - from));
+    for (int i = from; i < to; ++i) {
+        out.push_back(ticks[static_cast<size_t>(i)].get<mcl::MCLTickResult>());
     }
     return out;
 }

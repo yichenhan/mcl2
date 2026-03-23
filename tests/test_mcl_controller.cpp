@@ -3,6 +3,8 @@
 #include "mcl/mcl_controller.hpp"
 #include "ray/ray_cast_obstacles.hpp"
 
+#include "nlohmann/json.hpp"
+
 namespace {
 
 void set_all_particles_to(mcl::MCLController& c, float x, float y) {
@@ -140,4 +142,45 @@ TEST_CASE("MCLController wall-sum only enforced when pair exists") {
     const auto bad = c.gate_estimate(field, paired_x, 0.0, prev, 0.05);
     CHECK_FALSE(bad.accepted);
     CHECK(bad.failed_wall_sum);
+}
+
+TEST_CASE("MCLController tick output serializes and round-trips") {
+    mcl::MCLConfig mcfg;
+    mcfg.num_particles = 50;
+    mcl::GateConfig gcfg;
+    gcfg.max_estimate_speed_ft_per_s = 1e6;
+    gcfg.max_jump_in = 1e6;
+    gcfg.max_radius_90_in = 1e6;
+    gcfg.max_sensor_residual_in = 1e6;
+    gcfg.min_valid_sensors_for_residual = 0;
+
+    mcl::MCLController c(mcfg, gcfg);
+    c.initialize_uniform(42);
+
+    sim::Field field;
+    const std::array<double, 4> readings{10.0, 10.0, -1.0, -1.0};
+    const mcl::Estimate prev{0.0f, 0.0f};
+    const mcl::MCLTickResult out = c.tick(
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        readings,
+        2,
+        &field,
+        &prev,
+        0.05);
+
+    CHECK(out.valid_sensor_count == 2);
+    CHECK(out.update_skipped == false);
+    CHECK(out.post_predict.particles.size() == static_cast<size_t>(mcfg.num_particles));
+    CHECK(out.post_update.particles.size() == static_cast<size_t>(mcfg.num_particles));
+    CHECK(out.post_resample.particles.size() == static_cast<size_t>(mcfg.num_particles));
+
+    const nlohmann::json j = out;
+    const mcl::MCLTickResult decoded = j.get<mcl::MCLTickResult>();
+    CHECK(decoded.valid_sensor_count == out.valid_sensor_count);
+    CHECK(decoded.update_skipped == out.update_skipped);
+    CHECK(decoded.gate.accepted == out.gate.accepted);
+    CHECK(decoded.post_resample.particles.size() == out.post_resample.particles.size());
 }

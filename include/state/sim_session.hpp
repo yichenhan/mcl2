@@ -36,6 +36,8 @@ public:
 
     const SimSessionConfig& config() const;
     const std::vector<TickState>& history() const;
+    const std::vector<mcl::MCLTickResult>& mcl_history() const;
+    const mcl::MCLTickResult* latest_mcl_tick() const;
     int current_tick() const;
 
     void schedule_failure(const noise::FailureEvent& event);
@@ -48,8 +50,6 @@ private:
 
     TickState process_step(const sim::StepResult& step_result);
     std::array<double, 4> read_sensors(const sim::RobotState& s);
-    MCLSnapshot snapshot_from_mcl() const;
-
     SimSessionConfig config_;
     sim::Physics physics_;
     sim::SensorModel sensor_model_;
@@ -59,6 +59,7 @@ private:
     int tick_ = 0;
     sim::RobotState odom_state_{};
     std::vector<TickState> history_;
+    std::vector<mcl::MCLTickResult> mcl_history_;
 };
 
 std::string action_to_string(sim::Action action);

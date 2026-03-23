@@ -20,7 +20,10 @@ struct RouteResult {
 
 class RouteRunner {
 public:
-    RouteResult run(const RouteDefinition& route, const std::string& replay_dir);
+    RouteResult run(
+        const RouteDefinition& route,
+        const std::string& replay_dir,
+        const std::string& mcl_replay_dir = std::string{});
 };
 
 } // namespace pursuit

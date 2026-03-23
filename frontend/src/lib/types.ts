@@ -22,6 +22,8 @@ export interface MCLSnapshot {
   particles: Particle[];
   estimate: Estimate;
   n_eff: number;
+  spread?: number;
+  radius_90?: number;
 }
 
 export interface RobotState {
@@ -42,6 +44,67 @@ export interface TickState {
   mcl_error: number;
   odom_error: number;
   valid_sensor_count: number;
+  update_skipped?: boolean;
+  pose_gated?: boolean;
+}
+
+export interface GateDecision {
+  accepted: boolean;
+  failed_velocity: boolean;
+  failed_r90: boolean;
+  failed_passability: boolean;
+  failed_residual: boolean;
+  failed_wall_sum: boolean;
+  jump_in: number;
+  radius_90_in: number;
+  spread_in: number;
+  reason: string;
+}
+
+export interface Pose {
+  x: number;
+  y: number;
+  theta: number;
+}
+
+export interface PhaseSnapshot {
+  particles: Particle[];
+  estimate: Estimate;
+  n_eff: number;
+  spread: number;
+  radius_90: number;
+}
+
+export interface MCLClusterStats {
+  spread: number;
+  radius_90: number;
+  centroid: Estimate;
+}
+
+export interface MCLTickResult {
+  raw_estimate: Pose;
+  gate: GateDecision;
+  valid_sensor_count: number;
+  update_skipped: boolean;
+  cluster_stats: MCLClusterStats;
+  n_eff: number;
+  post_predict: PhaseSnapshot;
+  post_update: PhaseSnapshot;
+  post_resample: PhaseSnapshot;
+}
+
+export interface MCLReplayFile {
+  session_id?: string;
+  total_ticks?: number;
+  field_half?: number;
+  obstacles?: AABB[];
+  ticks: MCLTickResult[];
+}
+
+export type AnyTick = TickState | MCLTickResult;
+
+export function isTickState(tick: AnyTick): tick is TickState {
+  return "ground_truth" in tick;
 }
 
 export interface SessionStartRequest {

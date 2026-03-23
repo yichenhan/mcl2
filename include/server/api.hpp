@@ -14,7 +14,7 @@ namespace server {
 
 class SimServer {
 public:
-    SimServer(int port, std::string replay_dir);
+    SimServer(int port, std::string replay_dir, std::string mcl_replay_dir = "replay_mcl");
     void run();
 
 private:
@@ -24,6 +24,7 @@ private:
 
     int port_;
     std::string replay_dir_;
+    std::string mcl_replay_dir_;
     std::string route_dir_ = "../routes";
     httplib::Server server_;
     std::mutex mutex_;

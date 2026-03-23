@@ -7,6 +7,7 @@
 
 #include "nlohmann/json.hpp"
 
+#include <cstdio>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -19,6 +20,44 @@ bool is_safe_filename(const std::string& name) {
     return !name.empty() && name.find("..") == std::string::npos && name.find('/') == std::string::npos;
 }
 
+bool write_mcl_replay_atomic(
+    const std::string& directory,
+    const std::string& file_stem,
+    const state::SimSession& session) {
+    std::error_code ec;
+    std::filesystem::create_directories(directory, ec);
+    if (ec) return false;
+
+    nlohmann::json j;
+    j["session_id"] = file_stem;
+    j["total_ticks"] = session.mcl_history().size();
+    j["field_half"] = session.config().field.field_half;
+    j["obstacles"] = nlohmann::json::array();
+    for (const auto& o : session.config().field.obstacles) {
+        j["obstacles"].push_back({
+            { "min_x", o.min_x },
+            { "min_y", o.min_y },
+            { "max_x", o.max_x },
+            { "max_y", o.max_y },
+        });
+    }
+    j["ticks"] = session.mcl_history();
+
+    const std::string final_path = directory + "/" + file_stem + ".json";
+    const std::string tmp_path = final_path + ".tmp";
+    std::ofstream out(tmp_path, std::ios::trunc);
+    if (!out.is_open()) return false;
+    out << j.dump(2);
+    out.close();
+    if (!out) return false;
+
+    if (std::rename(tmp_path.c_str(), final_path.c_str()) != 0) {
+        std::remove(tmp_path.c_str());
+        return false;
+    }
+    return true;
+}
+
 noise::FailureType failure_type_from_string(const std::string& v) {
     if (v == "sensor_stuck") return noise::FailureType::SensorStuck;
     if (v == "odom_spike") return noise::FailureType::OdomSpike;
@@ -29,8 +68,8 @@ noise::FailureType failure_type_from_string(const std::string& v) {
 }
 } // namespace
 
-SimServer::SimServer(int port, std::string replay_dir)
-    : port_(port), replay_dir_(std::move(replay_dir)) {
+SimServer::SimServer(int port, std::string replay_dir, std::string mcl_replay_dir)
+    : port_(port), replay_dir_(std::move(replay_dir)), mcl_replay_dir_(std::move(mcl_replay_dir)) {
     setup_routes();
 }
 
@@ -215,6 +254,7 @@ void SimServer::setup_routes() {
             return;
         }
         const bool wrote = rec_it->second->write_atomic();
+        const bool wrote_mcl = write_mcl_replay_atomic(mcl_replay_dir_, session_id, *it->second);
         const int tick_count = rec_it->second->tick_count();
         const std::string path = rec_it->second->output_path();
         recorders_.erase(rec_it);
@@ -222,6 +262,7 @@ void SimServer::setup_routes() {
 
         res.set_content(nlohmann::json{
             { "saved", wrote },
+            { "saved_mcl", wrote_mcl },
             { "ticks", tick_count },
             { "path", path },
         }.dump(), "application/json");
@@ -332,7 +373,7 @@ void SimServer::setup_routes() {
                 route.failure_seed = static_cast<uint64_t>(std::strtoull(req.get_param_value("seed").c_str(), nullptr, 10));
             }
             pursuit::RouteRunner runner;
-            const pursuit::RouteResult rr = runner.run(route, replay_dir_);
+            const pursuit::RouteResult rr = runner.run(route, replay_dir_, mcl_replay_dir_);
 
             nlohmann::json out = {
                 {"replay_file", rr.replay_file},
@@ -375,6 +416,40 @@ void SimServer::setup_routes() {
         if (req.has_param("from")) from = std::stoi(req.get_param_value("from"));
         if (req.has_param("to")) to = std::stoi(req.get_param_value("to"));
         const auto ticks = state::ReplayLoader::load_ticks(replay_dir_ + "/" + file, from, to);
+        res.set_content(nlohmann::json(ticks).dump(), "application/json");
+    });
+
+    server_.Get("/api/mcl-replays", [this](const httplib::Request&, httplib::Response& res) {
+        const auto files = state::ReplayLoader::list_mcl_replays(mcl_replay_dir_);
+        nlohmann::json out = nlohmann::json::array();
+        for (const auto& f : files) {
+            out.push_back(f);
+        }
+        res.set_content(out.dump(), "application/json");
+    });
+
+    server_.Get(R"(/api/mcl-replays/([^/]+)/meta)", [this](const httplib::Request& req, httplib::Response& res) {
+        const std::string file = req.matches[1];
+        if (!is_safe_filename(file)) {
+            res.status = 400;
+            res.set_content(json_error("invalid file").dump(), "application/json");
+            return;
+        }
+        res.set_content(state::ReplayLoader::load_mcl_metadata(mcl_replay_dir_ + "/" + file).dump(), "application/json");
+    });
+
+    server_.Get(R"(/api/mcl-replays/([^/]+)/ticks)", [this](const httplib::Request& req, httplib::Response& res) {
+        const std::string file = req.matches[1];
+        if (!is_safe_filename(file)) {
+            res.status = 400;
+            res.set_content(json_error("invalid file").dump(), "application/json");
+            return;
+        }
+        int from = 0;
+        int to = 0;
+        if (req.has_param("from")) from = std::stoi(req.get_param_value("from"));
+        if (req.has_param("to")) to = std::stoi(req.get_param_value("to"));
+        const auto ticks = state::ReplayLoader::load_mcl_ticks(mcl_replay_dir_ + "/" + file, from, to);
         res.set_content(nlohmann::json(ticks).dump(), "application/json");
     });
 }

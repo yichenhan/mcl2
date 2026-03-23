@@ -3,10 +3,11 @@
 import { useMemo } from "react";
 
 import { parseFailures } from "@/lib/failures";
-import type { TickState } from "@/lib/types";
+import { isTickState } from "@/lib/types";
+import type { AnyTick } from "@/lib/types";
 
 interface Props {
-  tick: TickState | null;
+  tick: AnyTick | null;
 }
 
 function severityClass(sev: "info" | "warning" | "critical"): string {
@@ -16,7 +17,10 @@ function severityClass(sev: "info" | "warning" | "critical"): string {
 }
 
 export function FailureOverlay({ tick }: Props) {
-  const parsed = useMemo(() => parseFailures(tick?.active_failures ?? []), [tick]);
+  const parsed = useMemo(
+    () => parseFailures(tick && isTickState(tick) ? tick.active_failures : []),
+    [tick],
+  );
   const worst = useMemo(() => {
     if (parsed.some((p) => p.severity === "critical")) return "critical";
     if (parsed.some((p) => p.severity === "warning")) return "warning";

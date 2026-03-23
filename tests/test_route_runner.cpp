@@ -1,6 +1,8 @@
 #include "doctest/doctest.h"
 #include "pursuit/route_runner.hpp"
 
+#include <filesystem>
+
 TEST_CASE("RouteRunner executes a simple route and writes replay name") {
     pursuit::RouteDefinition route;
     route.name = "unit_simple";
@@ -10,11 +12,18 @@ TEST_CASE("RouteRunner executes a simple route and writes replay name") {
     route.failure_seed = 99;
     route.failure_config = {};
 
+    const std::string replay_dir = "/tmp/mcl_test_replays";
+    const std::string mcl_replay_dir = "/tmp/mcl_test_replay_mcl";
+    std::filesystem::remove_all(replay_dir);
+    std::filesystem::remove_all(mcl_replay_dir);
+
     pursuit::RouteRunner runner;
-    const auto result = runner.run(route, "/tmp");
+    const auto result = runner.run(route, replay_dir, mcl_replay_dir);
     CHECK(result.route_name == "unit_simple");
     CHECK(result.total_ticks > 0);
     CHECK(!result.replay_file.empty());
+    CHECK(std::filesystem::exists(replay_dir + "/" + result.replay_file));
+    CHECK(std::filesystem::exists(mcl_replay_dir + "/" + result.replay_file));
 }
 
 TEST_CASE("RouteRunner velocity gate can throttle estimate updates") {
