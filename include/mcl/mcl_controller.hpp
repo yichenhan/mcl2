@@ -15,7 +15,7 @@ namespace mcl {
 struct GateConfig {
     double max_estimate_speed_ft_per_s = 360.0 / 12.0;
     double max_jump_in = 12.0;
-    double max_radius_90_in = 5.0;
+    double max_radius_90_in = 7.0;
     double max_sensor_residual_in = 6.0;
     // Distance-dependent residual thresholds (100% tolerance over sensor spec).
     // < 200mm: spec ±15mm → ×2 = 30mm = 1.181 in.
