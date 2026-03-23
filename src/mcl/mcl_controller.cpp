@@ -28,7 +28,11 @@ MCLController::MCLController(
     LogFn log_fn)
     : engine_(mcl_config), gate_config_(gate_config), log_fn_(std::move(log_fn)) {
     if (!log_fn_) {
+#ifdef NDEBUG_LOG
+        log_fn_ = [](const std::string&) {};
+#else
         log_fn_ = [](const std::string& msg) { std::cout << msg; };
+#endif
     }
 }
 
@@ -126,9 +130,11 @@ MCLTickResult MCLController::tick(
         out.gate = gate_estimate(*field, readings, heading_deg, *prev_accepted, dt_sec, effective_enables);
     }
 
+#ifndef NDEBUG_LOG
     const std::string tick_json = nlohmann::json(out).dump();
     std::printf("[MCL_JSON_START] %s [MCL_JSON_FINISH]\n", tick_json.c_str());
     std::fflush(stdout);
+#endif
 
     return out;
 }

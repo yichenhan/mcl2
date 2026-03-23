@@ -88,8 +88,12 @@ DistanceLocResult computePosition(
     
     // #region agent log
     g_debug_tick_counter++;
+#ifdef NDEBUG_LOG
+    constexpr bool shouldLog = false;
+#else
     bool shouldLog = (constants::kDistLoc.debug_log_every_n > 0) &&
                      (g_debug_tick_counter % constants::kDistLoc.debug_log_every_n == 0);
+#endif
     // #endregion
     
     // ========================================================================

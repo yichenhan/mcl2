@@ -315,8 +315,12 @@ DistanceLocResult computePositionRayCast(
     
     // #region agent log
     g_raywall_debug_tick_counter++;
+#ifdef NDEBUG_LOG
+    constexpr bool shouldLog = false;
+#else
     bool shouldLog = (constants::kRayWall.global_log_every_n > 0) &&
                      (g_raywall_debug_tick_counter % constants::kRayWall.global_log_every_n == 0);
+#endif
     // #endregion
 
     // ========================================================================
@@ -568,8 +572,12 @@ DistanceLocResult computePositionRayCastLocal(
 
     // #region agent log
     g_raywall_debug_tick_counter++;
+#ifdef NDEBUG_LOG
+    constexpr bool shouldLog = false;
+#else
     bool shouldLog = (constants::kRayWall.local_log_every_n > 0) &&
                      (g_raywall_debug_tick_counter % constants::kRayWall.local_log_every_n == 0);
+#endif
     // #endregion
 
     // Validate basic inputs
