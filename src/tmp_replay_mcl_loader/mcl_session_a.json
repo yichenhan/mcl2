@@ -24,7 +24,30 @@
         "reason": "",
         "spread_in": 0.2
       },
+      "mcl_predicted_readings": [
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      "mcl_sensor_residuals": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
       "n_eff": 10.0,
+      "observed_readings": [
+        10.0,
+        10.0,
+        -1.0,
+        -1.0
+      ],
+      "odom_pose": {
+        "theta": 0.0,
+        "x": 0.0,
+        "y": 0.0
+      },
       "post_predict": {
         "estimate": {
           "x": 0.0,
@@ -78,6 +101,7 @@
         "x": 0.0,
         "y": 0.0
       },
+      "tick_count": 1,
       "update_skipped": false,
       "valid_sensor_count": 4
     },
@@ -102,7 +126,30 @@
         "reason": "",
         "spread_in": 0.2
       },
+      "mcl_predicted_readings": [
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      "mcl_sensor_residuals": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
       "n_eff": 10.0,
+      "observed_readings": [
+        10.0,
+        10.0,
+        -1.0,
+        -1.0
+      ],
+      "odom_pose": {
+        "theta": 0.0,
+        "x": 0.0,
+        "y": 0.0
+      },
       "post_predict": {
         "estimate": {
           "x": 1.0,
@@ -156,6 +203,7 @@
         "x": 1.0,
         "y": 0.0
       },
+      "tick_count": 2,
       "update_skipped": false,
       "valid_sensor_count": 4
     },
@@ -180,7 +228,30 @@
         "reason": "",
         "spread_in": 0.2
       },
+      "mcl_predicted_readings": [
+        -1.0,
+        -1.0,
+        -1.0,
+        -1.0
+      ],
+      "mcl_sensor_residuals": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
       "n_eff": 10.0,
+      "observed_readings": [
+        10.0,
+        10.0,
+        -1.0,
+        -1.0
+      ],
+      "odom_pose": {
+        "theta": 0.0,
+        "x": 0.0,
+        "y": 0.0
+      },
       "post_predict": {
         "estimate": {
           "x": 2.0,
@@ -234,6 +305,7 @@
         "x": 2.0,
         "y": 0.0
       },
+      "tick_count": 3,
       "update_skipped": false,
       "valid_sensor_count": 4
     }

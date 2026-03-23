@@ -5,6 +5,8 @@
 
 #include "nlohmann/json.hpp"
 
+#include <cmath>
+
 namespace {
 
 void set_all_particles_to(mcl::MCLController& c, float x, float y) {
@@ -190,4 +192,103 @@ TEST_CASE("MCLController tick output serializes and round-trips") {
     CHECK(decoded.update_skipped == out.update_skipped);
     CHECK(decoded.gate.accepted == out.gate.accepted);
     CHECK(decoded.post_resample.particles.size() == out.post_resample.particles.size());
+}
+
+TEST_CASE("MCLController tick exposes odom pose and sensor diagnostics") {
+    mcl::MCLConfig mcfg;
+    mcfg.num_particles = 50;
+    mcl::GateConfig gcfg;
+    gcfg.max_estimate_speed_ft_per_s = 1e6;
+    gcfg.max_jump_in = 1e6;
+    gcfg.max_radius_90_in = 1e6;
+    gcfg.max_sensor_residual_in = 1e6;
+    gcfg.min_valid_sensors_for_residual = 0;
+
+    mcl::MCLController c(mcfg, gcfg);
+    c.initialize_uniform(84);
+    set_all_particles_to(c, 0.0f, 0.0f);
+
+    sim::Field field;
+    const std::array<double, 4> readings{10.0, 20.0, -1.0, 5.0};
+    const mcl::Estimate prev{0.0f, 0.0f};
+    const mcl::Pose odom{12.0, -3.0, 90.0};
+    const mcl::MCLTickResult out = c.tick(
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        readings,
+        2,
+        &field,
+        &prev,
+        0.05,
+        nullptr,
+        &odom);
+
+    CHECK(out.odom_pose.x == doctest::Approx(12.0));
+    CHECK(out.odom_pose.y == doctest::Approx(-3.0));
+    CHECK(out.odom_pose.theta == doctest::Approx(90.0));
+    CHECK(out.observed_readings[0] == doctest::Approx(10.0));
+    CHECK(out.observed_readings[1] == doctest::Approx(20.0));
+    CHECK(out.observed_readings[2] == doctest::Approx(-1.0));
+    CHECK(out.observed_readings[3] == doctest::Approx(5.0));
+
+    CHECK(std::isfinite(out.mcl_predicted_readings[0]));
+    CHECK(std::isfinite(out.mcl_predicted_readings[1]));
+    CHECK(out.mcl_predicted_readings[2] == doctest::Approx(-1.0));
+    CHECK(std::isfinite(out.mcl_predicted_readings[3]));
+    CHECK(out.mcl_sensor_residuals[2] == doctest::Approx(0.0));
+    CHECK(out.mcl_sensor_residuals[0] == doctest::Approx(std::fabs(out.mcl_predicted_readings[0] - 10.0)));
+    CHECK(out.mcl_sensor_residuals[1] == doctest::Approx(std::fabs(out.mcl_predicted_readings[1] - 20.0)));
+    CHECK(out.mcl_sensor_residuals[3] == doctest::Approx(std::fabs(out.mcl_predicted_readings[3] - 5.0)));
+
+    const nlohmann::json j = out;
+    const mcl::MCLTickResult decoded = j.get<mcl::MCLTickResult>();
+    CHECK(decoded.odom_pose.x == doctest::Approx(out.odom_pose.x));
+    CHECK(decoded.odom_pose.y == doctest::Approx(out.odom_pose.y));
+    CHECK(decoded.odom_pose.theta == doctest::Approx(out.odom_pose.theta));
+    CHECK(decoded.observed_readings[0] == doctest::Approx(out.observed_readings[0]));
+    CHECK(decoded.observed_readings[1] == doctest::Approx(out.observed_readings[1]));
+    CHECK(decoded.observed_readings[2] == doctest::Approx(out.observed_readings[2]));
+    CHECK(decoded.observed_readings[3] == doctest::Approx(out.observed_readings[3]));
+    CHECK(decoded.mcl_predicted_readings[0] == doctest::Approx(out.mcl_predicted_readings[0]));
+    CHECK(decoded.mcl_sensor_residuals[0] == doctest::Approx(out.mcl_sensor_residuals[0]));
+}
+
+TEST_CASE("MCLController tick keeps default diagnostics without pose or field") {
+    mcl::MCLConfig mcfg;
+    mcfg.num_particles = 20;
+    mcl::GateConfig gcfg;
+    gcfg.max_estimate_speed_ft_per_s = 1e6;
+    gcfg.max_jump_in = 1e6;
+    gcfg.max_radius_90_in = 1e6;
+    gcfg.max_sensor_residual_in = 1e6;
+    gcfg.min_valid_sensors_for_residual = 0;
+
+    mcl::MCLController c(mcfg, gcfg);
+    c.initialize_uniform(99);
+
+    const std::array<double, 4> readings{-1.0, -1.0, -1.0, -1.0};
+    const mcl::MCLTickResult out = c.tick(
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        readings,
+        2,
+        nullptr,
+        nullptr,
+        0.05);
+
+    CHECK(out.odom_pose.x == doctest::Approx(0.0));
+    CHECK(out.odom_pose.y == doctest::Approx(0.0));
+    CHECK(out.odom_pose.theta == doctest::Approx(0.0));
+    CHECK(out.mcl_predicted_readings[0] == doctest::Approx(-1.0));
+    CHECK(out.mcl_predicted_readings[1] == doctest::Approx(-1.0));
+    CHECK(out.mcl_predicted_readings[2] == doctest::Approx(-1.0));
+    CHECK(out.mcl_predicted_readings[3] == doctest::Approx(-1.0));
+    CHECK(out.mcl_sensor_residuals[0] == doctest::Approx(0.0));
+    CHECK(out.mcl_sensor_residuals[1] == doctest::Approx(0.0));
+    CHECK(out.mcl_sensor_residuals[2] == doctest::Approx(0.0));
+    CHECK(out.mcl_sensor_residuals[3] == doctest::Approx(0.0));
 }

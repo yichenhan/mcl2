@@ -87,13 +87,23 @@ TickState SimSession::process_step(const sim::StepResult& step) {
     failure_injector_.apply(tick_, readings, noisy_odom, observed_heading);
     observed_heading = wrap_heading(observed_heading);
 
+    const mcl::Pose odom_pose{
+        odom_state_.x,
+        odom_state_.y,
+        odom_state_.heading_deg,
+    };
     const mcl::MCLTickResult mcl_tick = mcl_.tick(
         noisy_odom.forward_in,
         noisy_odom.rotation_deg,
         observed_heading,
         noisy_odom.lateral_in,
         readings,
-        config_.min_sensors_for_update);
+        config_.min_sensors_for_update,
+        nullptr,
+        nullptr,
+        0.0,
+        nullptr,
+        &odom_pose);
     mcl_history_.push_back(mcl_tick);
 
     MCLSnapshot post_predict;

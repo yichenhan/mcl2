@@ -7,12 +7,33 @@ import { FailureOverlay } from "@/components/FailureOverlay";
 import { FailureTimeline } from "@/components/FailureTimeline";
 import { FieldCanvas } from "@/components/FieldCanvas";
 import { MetricsPanel } from "@/components/MetricsPanel";
-import { StageStepper, type Stage } from "@/components/StageStepper";
+import { CanvasLegend } from "@/components/CanvasLegend";
 import { useMCLReplay } from "@/hooks/useMCLReplay";
+
+const TICK_MS = 50;
+const SECOND_MS = 1000;
+const TICKS_PER_SECOND = SECOND_MS / TICK_MS;
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
+
+function tickCountToCursor(tickCount: number, rangeMax: number): number {
+  return clamp(Math.max(1, Math.round(tickCount)) - 1, 0, rangeMax);
+}
+
+function msToCursor(ms: number, rangeMax: number): number {
+  const snappedMs = Math.round(ms / TICK_MS) * TICK_MS;
+  const tickCount = Math.max(1, Math.round(snappedMs / TICK_MS));
+  return tickCountToCursor(tickCount, rangeMax);
+}
+
+function formatTimestamp(ms: number): string {
+  return `${(ms / 1000).toFixed(2)}s (${ms}ms)`;
+}
 
 export default function MCLReplayPage() {
   const replay = useMCLReplay();
-  const [stage, setStage] = useState<Stage>("post_resample");
   const [isDragOver, setIsDragOver] = useState(false);
 
   useEffect(() => {
@@ -31,6 +52,12 @@ export default function MCLReplayPage() {
   const hasData = replay.totalTicks > 0;
 
   const rangeMax = Math.max(0, replay.totalTicks - 1);
+  const currentCursor = Math.min(replay.cursor, rangeMax);
+  const currentTickCount = hasData ? (replay.currentTick?.tick_count ?? currentCursor + 1) : 0;
+  const maxTickCount = hasData ? rangeMax + 1 : 0;
+  const currentTimeMs = currentTickCount * TICK_MS;
+  const maxTimeMs = Math.max(TICK_MS, maxTickCount * TICK_MS);
+  const currentTimeSec = Math.floor(currentTimeMs / SECOND_MS);
 
   return (
     <main className="flex min-h-screen flex-col bg-zinc-950 p-4 text-zinc-100">
@@ -95,10 +122,14 @@ export default function MCLReplayPage() {
         </div>
       ) : null}
 
-      <div className="grid flex-1 grid-cols-1 gap-4 lg:grid-cols-[1fr_320px]">
+      <div className="grid flex-1 grid-cols-1 gap-4 lg:grid-cols-[280px_1fr_320px]">
+        <aside className="space-y-3">
+          <CanvasLegend />
+          <MetricsPanel tick={replay.currentTick} />
+        </aside>
         <FieldCanvas
           tick={replay.currentTick}
-          stage={stage}
+          stage="post_resample"
           obstacles={replay.replayObstacles}
           fieldHalf={replay.fieldHalf}
           prevGroundTruth={null}
@@ -118,18 +149,34 @@ export default function MCLReplayPage() {
               <button
                 type="button"
                 className="rounded bg-zinc-700 px-2 py-1"
-                onClick={() => replay.setCursor(Math.max(0, replay.cursor - 1))}
+                onClick={() => replay.setCursor(Math.max(0, currentCursor - 1))}
                 disabled={!hasData}
               >
-                Prev
+                -50ms
               </button>
               <button
                 type="button"
                 className="rounded bg-zinc-700 px-2 py-1"
-                onClick={() => replay.setCursor(Math.min(rangeMax, replay.cursor + 1))}
+                onClick={() => replay.setCursor(Math.min(rangeMax, currentCursor + 1))}
                 disabled={!hasData}
               >
-                Next
+                +50ms
+              </button>
+              <button
+                type="button"
+                className="rounded bg-zinc-700 px-2 py-1"
+                onClick={() => replay.setCursor(Math.max(0, currentCursor - TICKS_PER_SECOND))}
+                disabled={!hasData}
+              >
+                -1s
+              </button>
+              <button
+                type="button"
+                className="rounded bg-zinc-700 px-2 py-1"
+                onClick={() => replay.setCursor(Math.min(rangeMax, currentCursor + TICKS_PER_SECOND))}
+                disabled={!hasData}
+              >
+                +1s
               </button>
               <select
                 className="rounded border border-zinc-700 bg-zinc-900 px-2 py-1"
@@ -148,19 +195,53 @@ export default function MCLReplayPage() {
               type="range"
               min={0}
               max={rangeMax}
-              value={Math.min(replay.cursor, rangeMax)}
+              value={currentCursor}
               onChange={(e) => replay.setCursor(Number(e.target.value))}
               disabled={!hasData}
             />
             <div className="mt-1 text-xs text-zinc-400">
-              Tick {Math.min(replay.cursor, rangeMax)} / {rangeMax}
+              {hasData ? `Tick ${currentTickCount} / ${maxTickCount} (${formatTimestamp(currentTimeMs)})` : "No data loaded"}
+            </div>
+            <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+              <label className="flex flex-col gap-1">
+                <span className="text-zinc-400">Time (ms, step 50)</span>
+                <input
+                  className="rounded border border-zinc-700 bg-zinc-900 px-2 py-1"
+                  type="number"
+                  min={TICK_MS}
+                  max={maxTimeMs}
+                  step={TICK_MS}
+                  value={currentTimeMs}
+                  onChange={(e) => {
+                    const requested = Number(e.target.value);
+                    if (Number.isNaN(requested)) return;
+                    replay.setCursor(msToCursor(requested, rangeMax));
+                  }}
+                  disabled={!hasData}
+                />
+              </label>
+              <label className="flex flex-col gap-1">
+                <span className="text-zinc-400">Time (sec, step 1)</span>
+                <input
+                  className="rounded border border-zinc-700 bg-zinc-900 px-2 py-1"
+                  type="number"
+                  min={0}
+                  max={Math.floor(maxTimeMs / SECOND_MS)}
+                  step={1}
+                  value={currentTimeSec}
+                  onChange={(e) => {
+                    const requestedSec = Number(e.target.value);
+                    if (Number.isNaN(requestedSec)) return;
+                    replay.setCursor(msToCursor(requestedSec * SECOND_MS, rangeMax));
+                  }}
+                  disabled={!hasData}
+                />
+              </label>
             </div>
             <div className="mt-2">
-              <FailureTimeline ticks={[]} cursor={Math.min(replay.cursor, rangeMax)} onJump={replay.setCursor} />
+              <FailureTimeline ticks={[]} cursor={currentCursor} onJump={replay.setCursor} />
             </div>
           </div>
-          <StageStepper stage={stage} onStageChange={setStage} />
-          <MetricsPanel tick={replay.currentTick} />
           <FailureOverlay tick={replay.currentTick} />
         </aside>
       </div>

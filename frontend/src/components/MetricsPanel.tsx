@@ -1,5 +1,7 @@
 "use client";
 
+import { Fragment } from "react";
+
 import { isTickState } from "@/lib/types";
 import type { AnyTick } from "@/lib/types";
 
@@ -21,12 +23,19 @@ export function MetricsPanel({ tick }: Props) {
     );
   }
 
-  const tickIndex = isTickState(tick) ? tick.tick : null;
+  const tickIndex = isTickState(tick) ? tick.tick : (tick.tick_count ?? null);
   const nEff = tick.post_resample.n_eff;
   const spread = isTickState(tick) ? tick.post_resample.spread : tick.cluster_stats.spread;
   const radius90 = isTickState(tick) ? tick.post_resample.radius_90 : tick.cluster_stats.radius_90;
   const gateAccepted = isTickState(tick) ? null : tick.gate.accepted;
   const gateReason = isTickState(tick) ? null : tick.gate.reason;
+  const sensorLabels = ["L", "R", "F", "B"] as const;
+
+  const residualClass = (value: number) => {
+    if (value < 1.5) return "text-emerald-300";
+    if (value < 4.0) return "text-amber-300";
+    return "text-red-300";
+  };
 
   return (
     <div className="rounded border border-zinc-700 p-3 text-sm">
@@ -87,6 +96,35 @@ export function MetricsPanel({ tick }: Props) {
       ) : null}
       {!isTickState(tick) && gateReason ? (
         <div className="mt-2 text-xs text-zinc-300">Reason: {gateReason}</div>
+      ) : null}
+      {!isTickState(tick) && tick.observed_readings && tick.mcl_sensor_residuals ? (
+        <div className="mt-3 border-t border-zinc-800 pt-2 text-xs">
+          <div className="mb-1 font-semibold text-zinc-300">Sensor Diagnostics</div>
+          <div className="grid grid-cols-3 gap-y-1 text-zinc-400">
+            <span>Sensor</span>
+            <span>Reading</span>
+            <span>Residual</span>
+            {sensorLabels.map((label, i) => {
+              const reading = tick.observed_readings?.[i] ?? -1;
+              const residual = tick.mcl_sensor_residuals?.[i] ?? 0;
+              const readingText = reading < 0 ? "invalid" : `${formatNumber(reading)} in`;
+              const residualText = reading < 0 ? "-" : `${formatNumber(residual)} in`;
+              return (
+                <Fragment key={label}>
+                  <span className="text-zinc-200">
+                    {label}
+                  </span>
+                  <span className={reading < 0 ? "text-zinc-600" : "text-zinc-300"}>
+                    {readingText}
+                  </span>
+                  <span className={reading < 0 ? "text-zinc-600" : residualClass(residual)}>
+                    {residualText}
+                  </span>
+                </Fragment>
+              );
+            })}
+          </div>
+        </div>
       ) : null}
     </div>
   );

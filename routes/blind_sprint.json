@@ -25,11 +25,11 @@
   ],
   "obstacles": [],
   "initial_heading_deg": 0,
-  "pure_pursuit": {
-    "lookahead_distance": 10.0,
+  "follower": {
     "linear_velocity": 28.0,
     "waypoint_tolerance": 3.0,
-    "max_angular_velocity_deg": 220.0
+    "max_angular_velocity_deg": 220.0,
+    "turn_in_place_threshold_deg": 70.0
   },
   "failure_seed": 50,
   "failure_config": {

@@ -137,26 +137,6 @@ export function FieldCanvas({
 
     if (!tick || !selected) return;
 
-    for (const p of selected.particles) {
-      const pt = toCanvas(p.x, p.y);
-      const weightAlpha = Math.min(0.85, Math.max(0.15, p.weight * 5));
-      ctx.fillStyle = `rgba(96, 165, 250, ${weightAlpha})`;
-      ctx.fillRect(pt.x, pt.y, 2, 2);
-    }
-
-    const est = toCanvas(selected.estimate.x, selected.estimate.y);
-    ctx.strokeStyle = "#3b82f6";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(est.x, est.y, 6, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(est.x - 8, est.y);
-    ctx.lineTo(est.x + 8, est.y);
-    ctx.moveTo(est.x, est.y - 8);
-    ctx.lineTo(est.x, est.y + 8);
-    ctx.stroke();
-
     if (isTickState(tick)) {
       const gt = tick.ground_truth;
       const robot = toCanvas(gt.x, gt.y);
@@ -256,6 +236,63 @@ export function FieldCanvas({
       });
       ctx.setLineDash([]);
     } else {
+      // MCL replay mode:
+      // 1) Odom pose
+      // 2) MCL prediction with heading (raw estimate)
+      // 3) Sensor readings from odom pose
+      // 4) MCL diff vector and magnitude between odom and MCL prediction
+      if (tick.odom_pose) {
+        const odom = tick.odom_pose;
+        const odomDir = headingToDir(odom.theta);
+        const odomPerp = { x: odomDir.y, y: -odomDir.x };
+        const front = toCanvas(odom.x + odomDir.x * 3, odom.y + odomDir.y * 3);
+        const left = toCanvas(
+          odom.x - odomDir.x * 2 + odomPerp.x * 2,
+          odom.y - odomDir.y * 2 + odomPerp.y * 2,
+        );
+        const right = toCanvas(
+          odom.x - odomDir.x * 2 - odomPerp.x * 2,
+          odom.y - odomDir.y * 2 - odomPerp.y * 2,
+        );
+        ctx.fillStyle = "#22c55e";
+        ctx.beginPath();
+        ctx.moveTo(front.x, front.y);
+        ctx.lineTo(left.x, left.y);
+        ctx.lineTo(right.x, right.y);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      if (tick.odom_pose && tick.observed_readings) {
+        const odom = tick.odom_pose;
+        const odomPt = toCanvas(odom.x, odom.y);
+        const angles = [-90, 90, 0, 180];
+        ctx.setLineDash([4, 4]);
+        tick.observed_readings.forEach((dist, i) => {
+          const d = headingToDir(odom.theta + angles[i]);
+          if (dist < 0) {
+            const px = toCanvas(odom.x + d.x * 6, odom.y + d.y * 6);
+            ctx.strokeStyle = "#f97316";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(px.x - 4, px.y - 4);
+            ctx.lineTo(px.x + 4, px.y + 4);
+            ctx.moveTo(px.x + 4, px.y - 4);
+            ctx.lineTo(px.x - 4, px.y + 4);
+            ctx.stroke();
+            return;
+          }
+          const end = toCanvas(odom.x + d.x * dist, odom.y + d.y * dist);
+          ctx.strokeStyle = "#f59e0b";
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(odomPt.x, odomPt.y);
+          ctx.lineTo(end.x, end.y);
+          ctx.stroke();
+        });
+        ctx.setLineDash([]);
+      }
+
       const raw = toCanvas(tick.raw_estimate.x, tick.raw_estimate.y);
       const rawDir = headingToDir(tick.raw_estimate.theta);
       const rawFront = toCanvas(
@@ -275,6 +312,26 @@ export function FieldCanvas({
       ctx.moveTo(rawBack.x, rawBack.y);
       ctx.lineTo(rawFront.x, rawFront.y);
       ctx.stroke();
+
+      if (tick.odom_pose) {
+        const odom = tick.odom_pose;
+        const odomPt = toCanvas(odom.x, odom.y);
+        const dx = tick.raw_estimate.x - odom.x;
+        const dy = tick.raw_estimate.y - odom.y;
+        const diff = Math.hypot(dx, dy);
+        // White line links odom and MCL prediction to make drift obvious.
+        ctx.strokeStyle = "#e4e4e7";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(odomPt.x, odomPt.y);
+        ctx.lineTo(raw.x, raw.y);
+        ctx.stroke();
+        ctx.fillStyle = "#f4f4f5";
+        ctx.font = "11px sans-serif";
+        ctx.textAlign = "left";
+        ctx.textBaseline = "bottom";
+        ctx.fillText(`d=${diff.toFixed(2)} in`, raw.x + 6, raw.y - 6);
+      }
     }
   }, [
     activeFieldHalf,

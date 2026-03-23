@@ -65,7 +65,12 @@ TEST_CASE("ReplayLoader lists and paginates MCL replays") {
     replay_json["ticks"] = nlohmann::json::array();
     for (int i = 0; i < 3; ++i) {
         nlohmann::json tick;
+        tick["tick_count"] = i + 1;
+        tick["odom_pose"] = {{"x", 0.0}, {"y", 0.0}, {"theta", 0.0}};
         tick["raw_estimate"] = {{"x", static_cast<double>(i)}, {"y", 0.0}, {"theta", 0.0}};
+        tick["observed_readings"] = {10.0, 10.0, -1.0, -1.0};
+        tick["mcl_sensor_residuals"] = {0.0, 0.0, 0.0, 0.0};
+        tick["mcl_predicted_readings"] = {-1.0, -1.0, -1.0, -1.0};
         tick["gate"] = {
             {"accepted", true},
             {"failed_velocity", false},

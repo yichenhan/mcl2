@@ -11,7 +11,7 @@ CORE_SRC := constants.cpp ray_wall.cpp distance_localization.cpp \
             sim/field.cpp sim/physics.cpp \
             noise/noise_generator.cpp sim/sensor_model.cpp \
             ray/ray_cast_obstacles.cpp \
-            pursuit/pure_pursuit.cpp pursuit/route.cpp pursuit/route_runner.cpp \
+            pursuit/waypoint_follower.cpp pursuit/route.cpp pursuit/route_runner.cpp \
             state/sim_session.cpp state/session_recorder.cpp state/replay_loader.cpp \
             noise/failure_injector.cpp \
             chaos/chaos_runner.cpp
@@ -28,7 +28,7 @@ TEST_SRC := ../tests/doctest_main.cpp ../tests/test_ray_cast.cpp \
             ../tests/test_ray_cast_obstacles.cpp ../tests/test_mcl_obstacles.cpp \
             ../tests/test_tick_state.cpp ../tests/test_session_recorder.cpp \
             ../tests/test_replay_loader.cpp ../tests/test_failure_injector.cpp \
-            ../tests/test_step_continuous.cpp ../tests/test_pure_pursuit.cpp \
+            ../tests/test_step_continuous.cpp ../tests/test_waypoint_follower.cpp \
             ../tests/test_route_def.cpp ../tests/test_failure_injector_ext.cpp \
             ../tests/test_random_failures.cpp ../tests/test_session_continuous.cpp \
             ../tests/test_confidence_gate.cpp \
@@ -49,7 +49,9 @@ SERVER_MAIN := ../cli/server_main.o
 CHAOS_MAIN := ../cli/chaos_main.o
 ROUTE_MAIN := ../cli/route_main.o
 
-.PHONY: test server chaos route clean
+.PHONY: all test server chaos route clean
+
+all: $(TEST_BIN)
 
 test: $(TEST_BIN)
 	./$(TEST_BIN)

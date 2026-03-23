@@ -91,32 +91,32 @@ export default function RouteEditorPage() {
 
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="mb-1 block text-xs text-zinc-400">Lookahead</label>
+                <label className="mb-1 block text-xs text-zinc-400">Linear vel</label>
                 <input
                   type="number"
                   className="w-full rounded border border-zinc-700 bg-zinc-900 px-2 py-1"
-                  value={editor.route.pure_pursuit.lookahead_distance}
+                  value={editor.route.follower.linear_velocity}
                   onChange={(e) =>
                     editor.patchRoute({
-                      pure_pursuit: {
-                        ...editor.route.pure_pursuit,
-                        lookahead_distance: Number(e.target.value),
+                      follower: {
+                        ...editor.route.follower,
+                        linear_velocity: Number(e.target.value),
                       },
                     })
                   }
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs text-zinc-400">Linear vel</label>
+                <label className="mb-1 block text-xs text-zinc-400">Turn threshold</label>
                 <input
                   type="number"
                   className="w-full rounded border border-zinc-700 bg-zinc-900 px-2 py-1"
-                  value={editor.route.pure_pursuit.linear_velocity}
+                  value={editor.route.follower.turn_in_place_threshold_deg}
                   onChange={(e) =>
                     editor.patchRoute({
-                      pure_pursuit: {
-                        ...editor.route.pure_pursuit,
-                        linear_velocity: Number(e.target.value),
+                      follower: {
+                        ...editor.route.follower,
+                        turn_in_place_threshold_deg: Number(e.target.value),
                       },
                     })
                   }

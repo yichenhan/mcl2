@@ -5,6 +5,7 @@
 #include "nlohmann/json.hpp"
 
 #include <array>
+#include <cstdint>
 #include <functional>
 #include <string>
 #include <vector>
@@ -62,7 +63,12 @@ struct PhaseSnapshot {
 };
 
 struct MCLTickResult {
+    uint64_t tick_count = 0;
+    Pose odom_pose{};
     Pose raw_estimate{};
+    std::array<double, 4> observed_readings{ -1.0, -1.0, -1.0, -1.0 };
+    std::array<double, 4> mcl_sensor_residuals{ 0.0, 0.0, 0.0, 0.0 };
+    std::array<double, 4> mcl_predicted_readings{ -1.0, -1.0, -1.0, -1.0 };
     GateDecision gate{};
     int valid_sensor_count = 0;
     bool update_skipped = false;
@@ -155,7 +161,12 @@ inline void from_json(const nlohmann::json& j, GateDecision& d) {
 
 inline void to_json(nlohmann::json& j, const MCLTickResult& r) {
     j = nlohmann::json{
+        { "tick_count", r.tick_count },
+        { "odom_pose", r.odom_pose },
         { "raw_estimate", r.raw_estimate },
+        { "observed_readings", r.observed_readings },
+        { "mcl_sensor_residuals", r.mcl_sensor_residuals },
+        { "mcl_predicted_readings", r.mcl_predicted_readings },
         { "gate", r.gate },
         { "valid_sensor_count", r.valid_sensor_count },
         { "update_skipped", r.update_skipped },
@@ -175,7 +186,12 @@ inline void to_json(nlohmann::json& j, const MCLTickResult& r) {
 }
 
 inline void from_json(const nlohmann::json& j, MCLTickResult& r) {
+    r.tick_count = j.value("tick_count", 0ULL);
+    r.odom_pose = j.value("odom_pose", Pose{});
     r.raw_estimate = j.value("raw_estimate", Pose{});
+    r.observed_readings = j.value("observed_readings", std::array<double, 4>{ -1.0, -1.0, -1.0, -1.0 });
+    r.mcl_sensor_residuals = j.value("mcl_sensor_residuals", std::array<double, 4>{ 0.0, 0.0, 0.0, 0.0 });
+    r.mcl_predicted_readings = j.value("mcl_predicted_readings", std::array<double, 4>{ -1.0, -1.0, -1.0, -1.0 });
     r.gate = j.value("gate", GateDecision{});
     r.valid_sensor_count = j.value("valid_sensor_count", 0);
     r.update_skipped = j.value("update_skipped", false);
@@ -219,7 +235,8 @@ public:
         const sim::Field* field = nullptr,
         const Estimate* prev_accepted = nullptr,
         double dt_sec = 0.0,
-        const GateEnables* gate_enables = nullptr);
+        const GateEnables* gate_enables = nullptr,
+        const Pose* odom_pose = nullptr);
 
     GateDecision gate_estimate(
         const sim::Field& field,
@@ -245,6 +262,7 @@ private:
     MCLEngine engine_;
     GateConfig gate_config_;
     LogFn log_fn_;
+    uint64_t tick_count_ = 0;
 };
 
 } // namespace mcl

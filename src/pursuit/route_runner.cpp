@@ -73,35 +73,28 @@ RouteResult RouteRunner::run(
         session.schedule_failure(f);
     }
 
-    PurePursuit pursuit(route.pure_pursuit);
+    WaypointFollower follower(route.follower);
     sim::RobotState control_state = cfg.initial_state;
-    mcl::Estimate accepted_estimate{
-        static_cast<float>(control_state.x),
-        static_cast<float>(control_state.y)
-    };
     for (int i = 0; i < route.max_ticks; ++i) {
         // Use estimated pose for control input to mimic real robots:
         // no direct access to ground truth during route following.
-        const Command cmd = pursuit.compute(control_state, route.waypoints);
+        const Command cmd = follower.compute(control_state, route.waypoints);
         const state::TickState tick = session.tick(cmd.linear_vel, cmd.angular_vel_deg);
-
-        const auto decision = session.gate_estimate_for_control(accepted_estimate, tick);
-        if (decision.accepted) {
-            accepted_estimate = tick.post_resample.estimate;
-            control_state.x = accepted_estimate.x;
-            control_state.y = accepted_estimate.y;
-        }
+        // Follow the latest MCL estimate directly for control state. The
+        // session already applies MCL gating/noise handling at source.
+        control_state.x = tick.post_resample.estimate.x;
+        control_state.y = tick.post_resample.estimate.y;
         if (std::isfinite(tick.observed_heading)) {
             control_state.heading_deg = tick.observed_heading;
         }
 
-        result.waypoints_reached = pursuit.current_waypoint_index();
-        if (pursuit.is_complete()) break;
+        result.waypoints_reached = follower.current_waypoint_index();
+        if (follower.is_complete()) break;
     }
 
     const auto& history = session.history();
     result.total_ticks = static_cast<int>(history.size());
-    result.completed = pursuit.is_complete();
+    result.completed = follower.is_complete();
     if (!history.empty()) {
         result.final_mcl_error = history.back().mcl_error;
         double sum = 0.0;
@@ -119,10 +112,11 @@ RouteResult RouteRunner::run(
         {"description", route.description},
         {"max_ticks", route.max_ticks},
         {"max_estimate_speed_ft_per_s", route.max_estimate_speed_ft_per_s},
-        {"pure_pursuit", {
-            {"lookahead_distance", route.pure_pursuit.lookahead_distance},
-            {"linear_velocity", route.pure_pursuit.linear_velocity},
-            {"waypoint_tolerance", route.pure_pursuit.waypoint_tolerance},
+        {"follower", {
+            {"linear_velocity", route.follower.linear_velocity},
+            {"waypoint_tolerance", route.follower.waypoint_tolerance},
+            {"max_angular_velocity_deg", route.follower.max_angular_velocity_deg},
+            {"turn_in_place_threshold_deg", route.follower.turn_in_place_threshold_deg},
         }},
     };
     nlohmann::json waypoints = nlohmann::json::array();

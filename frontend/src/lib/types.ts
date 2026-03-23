@@ -19,7 +19,7 @@ export interface Estimate {
 }
 
 export interface MCLSnapshot {
-  particles: Particle[];
+  particles?: Particle[];
   estimate: Estimate;
   n_eff: number;
   spread?: number;
@@ -68,7 +68,7 @@ export interface Pose {
 }
 
 export interface PhaseSnapshot {
-  particles: Particle[];
+  particles?: Particle[];
   estimate: Estimate;
   n_eff: number;
   spread: number;
@@ -82,7 +82,12 @@ export interface MCLClusterStats {
 }
 
 export interface MCLTickResult {
+  tick_count?: number;
+  odom_pose?: Pose;
   raw_estimate: Pose;
+  observed_readings?: [number, number, number, number];
+  mcl_sensor_residuals?: [number, number, number, number];
+  mcl_predicted_readings?: [number, number, number, number];
   gate: GateDecision;
   valid_sensor_count: number;
   update_skipped: boolean;
@@ -130,11 +135,11 @@ export interface Waypoint {
   y: number;
 }
 
-export interface PurePursuitConfig {
-  lookahead_distance: number;
+export interface FollowerConfig {
   linear_velocity: number;
   waypoint_tolerance: number;
-  max_angular_velocity_deg?: number;
+  max_angular_velocity_deg: number;
+  turn_in_place_threshold_deg: number;
 }
 
 export interface FailureConfig {
@@ -162,7 +167,7 @@ export interface RouteDefinition {
   waypoints: Waypoint[];
   obstacles: AABB[];
   initial_heading_deg: number;
-  pure_pursuit: PurePursuitConfig;
+  follower: FollowerConfig;
   failure_seed: number;
   failure_config: FailureConfig;
   kidnap_events: KidnapEvent[];

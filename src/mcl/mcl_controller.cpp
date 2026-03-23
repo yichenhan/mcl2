@@ -20,6 +20,21 @@ nlohmann::json estimate_to_json(const Estimate& est) {
     };
 }
 
+void remove_particles_fields(nlohmann::json& value) {
+    if (value.is_object()) {
+        value.erase("particles");
+        for (auto& item : value.items()) {
+            remove_particles_fields(item.value());
+        }
+        return;
+    }
+    if (value.is_array()) {
+        for (auto& item : value) {
+            remove_particles_fields(item);
+        }
+    }
+}
+
 } // namespace
 
 MCLController::MCLController(
@@ -43,6 +58,7 @@ MCLController::MCLController(
 
 void MCLController::initialize_uniform(uint64_t seed) {
     engine_.initialize_uniform(seed);
+    tick_count_ = 0;
 }
 
 void MCLController::predict(double delta_forward, double delta_rotation, double heading_deg, double delta_lateral) {
@@ -103,8 +119,14 @@ MCLTickResult MCLController::tick(
     const sim::Field* field,
     const Estimate* prev_accepted,
     double dt_sec,
-    const GateEnables* gate_enables) {
+    const GateEnables* gate_enables,
+    const Pose* odom_pose) {
     MCLTickResult out;
+    out.tick_count = ++tick_count_;
+    if (odom_pose != nullptr) {
+        out.odom_pose = *odom_pose;
+    }
+    out.observed_readings = readings;
     for (double reading : readings) {
         if (reading >= 0.0) {
             out.valid_sensor_count++;
@@ -129,6 +151,23 @@ MCLTickResult MCLController::tick(
     out.raw_estimate.theta = heading_deg;
     out.cluster_stats = cluster_stats();
     out.n_eff = n_eff();
+
+    if (field != nullptr) {
+        const auto& sensors = engine_.config().sensors;
+        const distance_loc::Vec2 pos{ est.x, est.y };
+        for (size_t i = 0; i < 4; ++i) {
+            const double reading = readings[i];
+            if (reading < 0.0) continue;
+            const double predicted = ray::ray_distance_with_obstacles(
+                pos,
+                heading_deg,
+                sensors[i].offset,
+                sensors[i].angle_deg,
+                field->obstacles);
+            out.mcl_predicted_readings[i] = predicted;
+            out.mcl_sensor_residuals[i] = std::fabs(predicted - reading);
+        }
+    }
 
     if (field != nullptr && prev_accepted != nullptr) {
         const GateEnables effective_enables = (gate_enables != nullptr) ? *gate_enables : GateEnables{};
@@ -169,15 +208,13 @@ nlohmann::json MCLController::snapshot_json() const {
 void MCLController::emit_log(const char* phase, nlohmann::json extra) const {
     extra["phase"] = phase;
 #ifndef NDEBUG_LOG
-    const std::string log_json = extra.dump();
+    remove_particles_fields(extra);
     if (std::string(phase) == "tick") {
+        const std::string log_json = extra.dump();
         // Keep replay-compatible tick payloads wrapped in the parser delimiters.
         std::printf("[MCL_JSON_START] %s [MCL_JSON_FINISH]\n", log_json.c_str());
-    } else {
-        // Phase logs are debug-only and intentionally excluded from replay delimiters.
-        std::printf("[MCL_LOG] %s\n", log_json.c_str());
+        std::fflush(stdout);
     }
-    std::fflush(stdout);
 #endif
 }
 
@@ -289,7 +326,7 @@ GateDecision MCLController::gate_estimate(
     if (gate_enables.velocity && speed_ft_per_s > gate_config_.max_estimate_speed_ft_per_s) {
         d.accepted = false;
         d.failed_velocity = true;
-        d.reason = "velocity gate";
+        d.reason = "particle velocity gate";
         emit_log("gate", nlohmann::json{ { "gate", nlohmann::json(d) } });
         return d;
     }

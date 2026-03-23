@@ -147,13 +147,20 @@ RouteDefinition load_route(const std::string& path) {
         }
     }
 
-    if (j.contains("pure_pursuit") && j["pure_pursuit"].is_object()) {
-        const auto& pp = j["pure_pursuit"];
-        out.pure_pursuit.lookahead_distance = pp.value("lookahead_distance", out.pure_pursuit.lookahead_distance);
-        out.pure_pursuit.linear_velocity = pp.value("linear_velocity", out.pure_pursuit.linear_velocity);
-        out.pure_pursuit.waypoint_tolerance = pp.value("waypoint_tolerance", out.pure_pursuit.waypoint_tolerance);
-        out.pure_pursuit.max_angular_velocity_deg =
-            pp.value("max_angular_velocity_deg", out.pure_pursuit.max_angular_velocity_deg);
+    const auto* follower_cfg = static_cast<const nlohmann::json*>(nullptr);
+    if (j.contains("follower") && j["follower"].is_object()) {
+        follower_cfg = &j["follower"];
+    } else if (j.contains("pure_pursuit") && j["pure_pursuit"].is_object()) {
+        // Backward compatibility for older route files.
+        follower_cfg = &j["pure_pursuit"];
+    }
+    if (follower_cfg != nullptr) {
+        out.follower.linear_velocity = follower_cfg->value("linear_velocity", out.follower.linear_velocity);
+        out.follower.waypoint_tolerance = follower_cfg->value("waypoint_tolerance", out.follower.waypoint_tolerance);
+        out.follower.max_angular_velocity_deg =
+            follower_cfg->value("max_angular_velocity_deg", out.follower.max_angular_velocity_deg);
+        out.follower.turn_in_place_threshold_deg =
+            follower_cfg->value("turn_in_place_threshold_deg", out.follower.turn_in_place_threshold_deg);
     }
 
     if (j.contains("failure_config") && j["failure_config"].is_object()) {

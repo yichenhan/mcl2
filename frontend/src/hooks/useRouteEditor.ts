@@ -14,11 +14,11 @@ function defaultRoute(): RouteDefinition {
     waypoints: [{ x: 0, y: 0 }],
     obstacles: [],
     initial_heading_deg: 0,
-    pure_pursuit: {
-      lookahead_distance: 10,
+    follower: {
       linear_velocity: 26,
       waypoint_tolerance: 3,
       max_angular_velocity_deg: 220,
+      turn_in_place_threshold_deg: 70,
     },
     failure_seed: 42,
     failure_config: {

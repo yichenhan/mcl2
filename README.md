@@ -211,7 +211,7 @@ The test suite uses [doctest](https://github.com/doctest/doctest) and covers:
 | Physics                 | `test_physics`                                               |
 | Sensors                 | `test_sensor_model`, `test_noise_generator`                  |
 | Session & replay        | `test_tick_state`, `test_session_recorder`, `test_replay_loader` |
-| Route pursuit           | `test_pure_pursuit`, `test_route_def`, `test_route_runner`   |
+| Route pursuit           | `test_waypoint_follower`, `test_route_def`, `test_route_runner`   |
 | Failure injection       | `test_failure_injector`, `test_failure_injector_ext`, `test_random_failures` |
 | Chaos                   | `test_chaos_runner`                                          |
 | Stepping modes          | `test_step_continuous`, `test_session_continuous`            |

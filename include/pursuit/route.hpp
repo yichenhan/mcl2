@@ -2,7 +2,7 @@
 
 #include "distance_localization.hpp"
 #include "noise/failure_injector.hpp"
-#include "pursuit/pure_pursuit.hpp"
+#include "pursuit/waypoint_follower.hpp"
 #include "sim/field.hpp"
 
 #include <cstdint>
@@ -44,7 +44,7 @@ struct RouteDefinition {
     std::vector<sim::AABB> obstacles;
     distance_loc::Vec2 initial_position{0.0, 0.0};
     double initial_heading_deg = 0.0;
-    PurePursuitConfig pure_pursuit{};
+    FollowerConfig follower{};
     uint64_t failure_seed = 42;
     FailureGenConfig failure_config{};
     std::vector<KidnapEvent> kidnap_events;
