@@ -34,6 +34,11 @@ MCLController::MCLController(
         log_fn_ = [](const std::string& msg) { std::cout << msg; };
 #endif
     }
+#ifndef NDEBUG_LOG
+    std::printf("[MCLController] initialized with %d particles, field_half=%.1f\n",
+                mcl_config.num_particles, mcl_config.field_half);
+    std::fflush(stdout);
+#endif
 }
 
 void MCLController::initialize_uniform(uint64_t seed) {
@@ -129,12 +134,6 @@ MCLTickResult MCLController::tick(
         const GateEnables effective_enables = (gate_enables != nullptr) ? *gate_enables : GateEnables{};
         out.gate = gate_estimate(*field, readings, heading_deg, *prev_accepted, dt_sec, effective_enables);
     }
-
-#ifndef NDEBUG_LOG
-    const std::string tick_json = nlohmann::json(out).dump();
-    std::printf("[MCL_JSON_START] %s [MCL_JSON_FINISH]\n", tick_json.c_str());
-    std::fflush(stdout);
-#endif
 
     return out;
 }

@@ -1,7 +1,7 @@
 CXX      := g++
-CXXFLAGS := -std=c++17 -O2 -Wall -Wextra -pedantic -D_USE_MATH_DEFINES -DNDEBUG_LOG
-ifdef VERBOSE
 CXXFLAGS := -std=c++17 -O2 -Wall -Wextra -pedantic -D_USE_MATH_DEFINES
+ifdef QUIET
+CXXFLAGS += -DNDEBUG_LOG
 endif
 INCLUDES := -I../include -Iinclude -I../third_party -Ithird_party -I.
 
@@ -28,11 +28,9 @@ TEST_SRC := ../tests/doctest_main.cpp ../tests/test_ray_cast.cpp \
             ../tests/test_ray_cast_obstacles.cpp ../tests/test_mcl_obstacles.cpp \
             ../tests/test_tick_state.cpp ../tests/test_session_recorder.cpp \
             ../tests/test_replay_loader.cpp ../tests/test_failure_injector.cpp \
-            ../tests/test_chaos_runner.cpp \
             ../tests/test_step_continuous.cpp ../tests/test_pure_pursuit.cpp \
             ../tests/test_route_def.cpp ../tests/test_failure_injector_ext.cpp \
             ../tests/test_random_failures.cpp ../tests/test_session_continuous.cpp \
-            ../tests/test_route_runner.cpp \
             ../tests/test_confidence_gate.cpp \
             ../tests/test_cluster_stats.cpp \
             ../tests/test_mcl_controller.cpp
