@@ -76,5 +76,13 @@ $(CHAOS_BIN): $(OBJ) $(CHAOS_MAIN)
 $(ROUTE_BIN): $(OBJ) $(ROUTE_MAIN)
 	$(CXX) $(CXXFLAGS) -o $@ $^ -lpthread
 
+ifeq ($(OS),Windows_NT)
+  RM = del /f /q
+  fixpath = $(subst /,\,$1)
+else
+  RM = rm -f
+  fixpath = $1
+endif
+
 clean:
-	rm -f $(OBJ) $(TEST_OBJ) $(TEST_BIN) $(SERVER_BIN) $(CHAOS_BIN) $(ROUTE_BIN) $(SERVER_MAIN) $(CHAOS_MAIN) $(ROUTE_MAIN)
+	$(RM) $(call fixpath,$(OBJ) $(TEST_OBJ) $(TEST_BIN) $(SERVER_BIN) $(CHAOS_BIN) $(ROUTE_BIN) $(SERVER_MAIN) $(CHAOS_MAIN) $(ROUTE_MAIN))
