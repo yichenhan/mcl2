@@ -135,6 +135,7 @@ MCLTickResult MCLController::tick(
         out.gate = gate_estimate(*field, readings, heading_deg, *prev_accepted, dt_sec, effective_enables);
     }
 
+    emit_log("tick", nlohmann::json(out));
     return out;
 }
 
@@ -166,8 +167,18 @@ nlohmann::json MCLController::snapshot_json() const {
 }
 
 void MCLController::emit_log(const char* phase, nlohmann::json extra) const {
-    if (!log_fn_) return;
     extra["phase"] = phase;
+#ifndef NDEBUG_LOG
+    const std::string log_json = extra.dump();
+    if (std::string(phase) == "tick") {
+        // Keep replay-compatible tick payloads wrapped in the parser delimiters.
+        std::printf("[MCL_JSON_START] %s [MCL_JSON_FINISH]\n", log_json.c_str());
+    } else {
+        // Phase logs are debug-only and intentionally excluded from replay delimiters.
+        std::printf("[MCL_LOG] %s\n", log_json.c_str());
+    }
+    std::fflush(stdout);
+#endif
 }
 
 GateDecision MCLController::fail_decision(const char* reason) const {
