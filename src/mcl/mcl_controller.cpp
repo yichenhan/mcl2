@@ -254,7 +254,10 @@ GateDecision MCLController::gate_estimate(
             const double pred = ray::ray_distance_with_obstacles(
                 pos, heading_deg, sensors[i].offset, sensors[i].angle_deg, field.obstacles);
             const double residual = std::fabs(pred - readings[static_cast<size_t>(i)]);
-            if (residual > gate_config_.max_sensor_residual_in) {
+            const double max_resid = (readings[static_cast<size_t>(i)] < gate_config_.sensor_close_range_in)
+                ? gate_config_.sensor_close_tolerance_in
+                : readings[static_cast<size_t>(i)] * gate_config_.sensor_far_tolerance_pct;
+            if (residual > max_resid) {
                 d.accepted = false;
                 d.failed_residual = true;
                 d.reason = "sensor residual gate";
