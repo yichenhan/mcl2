@@ -132,14 +132,21 @@ TEST_CASE("MCLController wall-sum only enforced when pair exists") {
     sim::Field field;
     mcl::Estimate prev{0.0f, 0.0f};
 
+    mcl::GateEnables enables{};
+    enables.velocity = false;
+    enables.r90 = false;
+    enables.passability = false;
+    enables.residual = false;
+    enables.wall_sum = true;
+
     // Only one axis sensor => wall-sum gate should not fire.
     std::array<double, 4> one_axis{5.0, -1.0, -1.0, -1.0};
-    const auto ok = c.gate_estimate(field, one_axis, 0.0, prev, 0.05);
+    const auto ok = c.gate_estimate(field, one_axis, 0.0, prev, 0.05, enables);
     CHECK(ok.accepted);
 
     // Paired X-axis readings with impossible sum => wall-sum should fail.
     std::array<double, 4> paired_x{5.0, 5.0, -1.0, -1.0};
-    const auto bad = c.gate_estimate(field, paired_x, 0.0, prev, 0.05);
+    const auto bad = c.gate_estimate(field, paired_x, 0.0, prev, 0.05, enables);
     CHECK_FALSE(bad.accepted);
     CHECK(bad.failed_wall_sum);
 }
