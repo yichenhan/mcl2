@@ -1,5 +1,6 @@
 # Replay data (large JSON files)
 replays/
+replay_mcl/
 src/replays/
 
 # Build artifacts
