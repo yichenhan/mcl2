@@ -1,7 +1,7 @@
 CXX      := g++
+CXXFLAGS := -std=c++17 -O2 -Wall -Wextra -pedantic -D_USE_MATH_DEFINES -DNDEBUG_LOG
+ifdef VERBOSE
 CXXFLAGS := -std=c++17 -O2 -Wall -Wextra -pedantic -D_USE_MATH_DEFINES
-ifdef QUIET
-CXXFLAGS += -DNDEBUG_LOG
 endif
 INCLUDES := -I../include -Iinclude -I../third_party -Ithird_party -I.
 
