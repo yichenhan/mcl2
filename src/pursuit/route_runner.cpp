@@ -29,12 +29,7 @@ bool write_mcl_replay_atomic(
     j["field_half"] = field.field_half;
     j["obstacles"] = nlohmann::json::array();
     for (const auto& o : field.obstacles) {
-        j["obstacles"].push_back({
-            {"min_x", o.min_x},
-            {"min_y", o.min_y},
-            {"max_x", o.max_x},
-            {"max_y", o.max_y},
-        });
+        j["obstacles"].push_back(nlohmann::json(o));
     }
     j["ticks"] = ticks;
 
@@ -128,7 +123,7 @@ RouteResult RouteRunner::run(
 
     nlohmann::json obstacles = nlohmann::json::array();
     for (const auto& o : route.obstacles) {
-        obstacles.push_back({{"min_x", o.min_x}, {"min_y", o.min_y}, {"max_x", o.max_x}, {"max_y", o.max_y}});
+        obstacles.push_back(nlohmann::json(o));
     }
     recorder.set_obstacles(obstacles);
     for (const auto& t : history) recorder.record(t);

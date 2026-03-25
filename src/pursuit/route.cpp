@@ -138,12 +138,7 @@ RouteDefinition load_route(const std::string& path) {
 
     if (j.contains("obstacles") && j["obstacles"].is_array()) {
         for (const auto& o : j["obstacles"]) {
-            out.obstacles.push_back(sim::AABB{
-                o.value("min_x", 0.0),
-                o.value("min_y", 0.0),
-                o.value("max_x", 0.0),
-                o.value("max_y", 0.0),
-            });
+            out.obstacles.push_back(o.get<sim::Obstacle>());
         }
     }
 

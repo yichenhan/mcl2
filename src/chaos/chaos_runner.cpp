@@ -111,9 +111,9 @@ RunResult ChaosRunner::run_single(
     cfg.seed = rr.seed;
 
     if (rr.path_type == "obstacle_slalom") {
-        cfg.field.obstacles.push_back(sim::AABB{-15.0, -10.0, -5.0, 10.0});
-        cfg.field.obstacles.push_back(sim::AABB{5.0, 15.0, 15.0, 35.0});
-        cfg.field.obstacles.push_back(sim::AABB{5.0, -35.0, 15.0, -15.0});
+        cfg.field.obstacles.push_back(sim::Obstacle{sim::AABB{-15.0, -10.0, -5.0, 10.0}, ""});
+        cfg.field.obstacles.push_back(sim::Obstacle{sim::AABB{5.0, 15.0, 15.0, 35.0}, ""});
+        cfg.field.obstacles.push_back(sim::Obstacle{sim::AABB{5.0, -35.0, 15.0, -15.0}, ""});
     }
 
     state::SimSession session(cfg);
@@ -196,12 +196,7 @@ std::vector<RunResult> ChaosRunner::run_all() {
         });
         nlohmann::json obstacles = nlohmann::json::array();
         for (const auto& o : configs[static_cast<size_t>(r.run_id)].field.obstacles) {
-            obstacles.push_back({
-                {"min_x", o.min_x},
-                {"min_y", o.min_y},
-                {"max_x", o.max_x},
-                {"max_y", o.max_y},
-            });
+            obstacles.push_back(nlohmann::json(o));
         }
         recorder.set_obstacles(obstacles);
         for (const auto& t : histories[static_cast<size_t>(r.run_id)]) {

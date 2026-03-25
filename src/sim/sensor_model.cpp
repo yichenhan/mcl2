@@ -91,10 +91,25 @@ double SensorModel::observe_distance_sensor(
     const distance_loc::Vec2& sensor_offset_rb,
     double sensor_rel_deg,
     int sensor_idx,
-    const std::vector<AABB>& obstacles) {
+    const std::vector<Obstacle>& obstacles) {
     const double true_dist_in = ray::ray_distance_with_obstacles(
         robot_pos, heading_deg, sensor_offset_rb, sensor_rel_deg, obstacles);
     return observe_distance_in(true_dist_in, sensor_idx);
+}
+
+double SensorModel::observe_distance_sensor(
+    const distance_loc::Vec2& robot_pos,
+    double heading_deg,
+    const distance_loc::Vec2& sensor_offset_rb,
+    double sensor_rel_deg,
+    int sensor_idx,
+    const std::vector<AABB>& obstacles) {
+    std::vector<Obstacle> wrapped;
+    wrapped.reserve(obstacles.size());
+    for (const auto& b : obstacles) {
+        wrapped.push_back(Obstacle{b, ""});
+    }
+    return observe_distance_sensor(robot_pos, heading_deg, sensor_offset_rb, sensor_rel_deg, sensor_idx, wrapped);
 }
 
 MotionDelta SensorModel::apply_collision_stall(const MotionDelta& odom_delta, bool colliding) {

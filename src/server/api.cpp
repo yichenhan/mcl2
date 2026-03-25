@@ -34,12 +34,7 @@ bool write_mcl_replay_atomic(
     j["field_half"] = session.config().field.field_half;
     j["obstacles"] = nlohmann::json::array();
     for (const auto& o : session.config().field.obstacles) {
-        j["obstacles"].push_back({
-            { "min_x", o.min_x },
-            { "min_y", o.min_y },
-            { "max_x", o.max_x },
-            { "max_y", o.max_y },
-        });
+        j["obstacles"].push_back(nlohmann::json(o));
     }
     j["ticks"] = session.mcl_history();
 
@@ -118,12 +113,7 @@ void SimServer::setup_routes() {
         if (body.contains("obstacles") && body["obstacles"].is_array()) {
             cfg.field.obstacles.clear();
             for (const auto& o : body["obstacles"]) {
-                sim::AABB b;
-                b.min_x = o.value("min_x", 0.0);
-                b.min_y = o.value("min_y", 0.0);
-                b.max_x = o.value("max_x", 0.0);
-                b.max_y = o.value("max_y", 0.0);
-                cfg.field.obstacles.push_back(b);
+                cfg.field.obstacles.push_back(o.get<sim::Obstacle>());
             }
         }
 
@@ -142,12 +132,7 @@ void SimServer::setup_routes() {
             });
             nlohmann::json obstacles = nlohmann::json::array();
             for (const auto& o : cfg.field.obstacles) {
-                obstacles.push_back({
-                    { "min_x", o.min_x },
-                    { "min_y", o.min_y },
-                    { "max_x", o.max_x },
-                    { "max_y", o.max_y },
-                });
+                obstacles.push_back(nlohmann::json(o));
             }
             recorders_[session_id]->set_obstacles(obstacles);
         }
@@ -182,13 +167,6 @@ void SimServer::setup_routes() {
                 return;
             }
         }
-        sim::Action action = sim::Action::NONE;
-        if (!state::action_from_string(body.value("action", std::string("none")), action)) {
-            res.status = 400;
-            res.set_content(json_error("invalid action").dump(), "application/json");
-            return;
-        }
-
         std::lock_guard<std::mutex> lock(mutex_);
         auto it = sessions_.find(session_id);
         auto rec_it = recorders_.find(session_id);
@@ -197,7 +175,25 @@ void SimServer::setup_routes() {
             res.set_content(json_error("session not found").dump(), "application/json");
             return;
         }
-        state::TickState tick = it->second->tick(action);
+        state::TickState tick;
+        if (body.contains("linear_vel") && body.contains("angular_vel_deg")) {
+            if (!body["linear_vel"].is_number() || !body["angular_vel_deg"].is_number()) {
+                res.status = 400;
+                res.set_content(json_error("linear_vel and angular_vel_deg must be numbers").dump(), "application/json");
+                return;
+            }
+            const double linear_vel = body["linear_vel"].get<double>();
+            const double angular_vel_deg = body["angular_vel_deg"].get<double>();
+            tick = it->second->tick(linear_vel, angular_vel_deg);
+        } else {
+            sim::Action action = sim::Action::NONE;
+            if (!state::action_from_string(body.value("action", std::string("none")), action)) {
+                res.status = 400;
+                res.set_content(json_error("invalid action").dump(), "application/json");
+                return;
+            }
+            tick = it->second->tick(action);
+        }
         rec_it->second->record(tick);
         res.set_content(nlohmann::json(tick).dump(), "application/json");
     });
@@ -233,12 +229,7 @@ void SimServer::setup_routes() {
             { "obstacles", nlohmann::json::array() },
         };
         for (const auto& o : cfg.field.obstacles) {
-            out["obstacles"].push_back({
-                { "min_x", o.min_x },
-                { "min_y", o.min_y },
-                { "max_x", o.max_x },
-                { "max_y", o.max_y },
-            });
+            out["obstacles"].push_back(nlohmann::json(o));
         }
         res.set_content(out.dump(), "application/json");
     });

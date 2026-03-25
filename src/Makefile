@@ -33,7 +33,8 @@ TEST_SRC := ../tests/doctest_main.cpp ../tests/test_ray_cast.cpp \
             ../tests/test_random_failures.cpp ../tests/test_session_continuous.cpp \
             ../tests/test_confidence_gate.cpp \
             ../tests/test_cluster_stats.cpp \
-            ../tests/test_mcl_controller.cpp
+            ../tests/test_mcl_controller.cpp \
+            ../tests/test_ray_cast_shapes.cpp
 
 # Object files
 CORE_OBJ := $(CORE_SRC:.cpp=.o)
