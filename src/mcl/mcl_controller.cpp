@@ -35,6 +35,21 @@ void remove_particles_fields(nlohmann::json& value) {
     }
 }
 
+void flatten_json(const nlohmann::json& value, const std::string& prefix,
+                  std::vector<std::pair<std::string, std::string>>& out) {
+    if (value.is_object()) {
+        for (const auto& [k, v] : value.items()) {
+            flatten_json(v, prefix.empty() ? k : prefix + "." + k, out);
+        }
+    } else if (value.is_array()) {
+        for (size_t i = 0; i < value.size(); ++i) {
+            flatten_json(value[i], prefix + "." + std::to_string(i), out);
+        }
+    } else {
+        out.emplace_back(prefix, value.dump());
+    }
+}
+
 } // namespace
 
 MCLController::MCLController(
@@ -207,11 +222,15 @@ nlohmann::json MCLController::snapshot_json() const {
 void MCLController::emit_log(const char* phase, nlohmann::json extra) const {
     extra["phase"] = phase;
 #ifndef NDEBUG_LOG
-    remove_particles_fields(extra);
     if (std::string(phase) == "tick" &&
         (log_interval_ticks_ <= 1 || tick_count_ % static_cast<uint64_t>(log_interval_ticks_) == 0)) {
-        const std::string log_json = extra.dump();
-        std::printf("[MCL_JSON_START] %s [MCL_JSON_FINISH]\n", log_json.c_str());
+        remove_particles_fields(extra);
+        std::vector<std::pair<std::string, std::string>> kvs;
+        flatten_json(extra, "", kvs);
+        for (const auto& [key, val] : kvs) {
+            std::printf("[TICK=%llu || %s]=%s\n",
+                        static_cast<unsigned long long>(tick_count_), key.c_str(), val.c_str());
+        }
         std::fflush(stdout);
     }
 #endif
