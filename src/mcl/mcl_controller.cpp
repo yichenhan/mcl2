@@ -52,7 +52,6 @@ MCLController::MCLController(
 #ifndef NDEBUG_LOG
     std::printf("[MCLController] initialized with %d particles, field_half=%.1f\n",
                 mcl_config.num_particles, mcl_config.field_half);
-    std::fflush(stdout);
 #endif
 }
 
@@ -209,9 +208,9 @@ void MCLController::emit_log(const char* phase, nlohmann::json extra) const {
     extra["phase"] = phase;
 #ifndef NDEBUG_LOG
     remove_particles_fields(extra);
-    if (std::string(phase) == "tick") {
+    if (std::string(phase) == "tick" &&
+        (log_interval_ticks_ <= 1 || tick_count_ % static_cast<uint64_t>(log_interval_ticks_) == 0)) {
         const std::string log_json = extra.dump();
-        // Keep replay-compatible tick payloads wrapped in the parser delimiters.
         std::printf("[MCL_JSON_START] %s [MCL_JSON_FINISH]\n", log_json.c_str());
         std::fflush(stdout);
     }
