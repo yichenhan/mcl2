@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 
-import type { AABB } from "@/lib/types";
+import type { AABB, Obstacle } from "@/lib/types";
 
 interface Props {
-  obstacles: AABB[];
-  onChange: (obstacles: AABB[]) => void;
+  obstacles: Obstacle[];
+  onChange: (obstacles: Obstacle[]) => void;
 }
 
 const DEFAULT_BOX: AABB = { min_x: -10, min_y: -10, max_x: 10, max_y: 10 };
@@ -49,9 +49,13 @@ export function ObstacleEditor({ obstacles, onChange }: Props) {
       </button>
       <div className="mt-3 space-y-1 text-xs">
         {obstacles.map((o, idx) => (
-          <div key={`${o.min_x}-${o.min_y}-${idx}`} className="flex items-center justify-between rounded bg-zinc-900 p-1">
+          <div key={idx} className="flex items-center justify-between rounded bg-zinc-900 p-1">
             <span>
-              [{o.min_x}, {o.min_y}] {"->"} [{o.max_x}, {o.max_y}]
+              {"min_x" in o
+                ? `[${o.min_x}, ${o.min_y}] -> [${o.max_x}, ${o.max_y}]`
+                : o.type === "circle"
+                  ? `circle (${o.cx}, ${o.cy}) r=${o.radius}`
+                  : `triangle (${o.x0}, ${o.y0})`}
             </span>
             <button
               type="button"

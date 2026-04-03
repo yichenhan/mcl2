@@ -1,12 +1,14 @@
 import type {
   Action,
-  RouteDefinition,
-  RouteRunResult,
-  MCLTickResult,
+  CancelNavResponse,
+  MapPreset,
+  NavResponse,
+  NavStatus,
   SessionConfigResponse,
   SessionStartRequest,
   SessionStartResponse,
   TickState,
+  Waypoint,
 } from "@/lib/types";
 
 const API_BASE =
@@ -47,6 +49,17 @@ export const api = {
     });
   },
 
+  tickContinuous(
+    sessionId: string,
+    linear_vel: number,
+    angular_vel_deg: number,
+  ): Promise<TickState> {
+    return request<TickState>(`/api/session/${sessionId}/tick`, {
+      method: "POST",
+      body: JSON.stringify({ linear_vel, angular_vel_deg }),
+    });
+  },
+
   getSessionState(sessionId: string): Promise<TickState[]> {
     return request<TickState[]>(`/api/session/${sessionId}/state`);
   },
@@ -57,11 +70,15 @@ export const api = {
 
   closeSession(
     sessionId: string,
-  ): Promise<{ saved: boolean; saved_mcl?: boolean; ticks: number; path: string }> {
-    return request<{ saved: boolean; saved_mcl?: boolean; ticks: number; path: string }>(
+  ): Promise<{ saved: boolean; saved_log?: boolean; ticks: number; path: string; log_path?: string }> {
+    return request<{ saved: boolean; saved_log?: boolean; ticks: number; path: string; log_path?: string }>(
       `/api/session/${sessionId}`,
       { method: "DELETE" },
     );
+  },
+
+  listMaps(): Promise<MapPreset[]> {
+    return request<MapPreset[]>("/api/maps");
   },
 
   listReplays(): Promise<string[]> {
@@ -80,46 +97,36 @@ export const api = {
     );
   },
 
-  listMCLReplays(): Promise<string[]> {
-    return request<string[]>("/api/mcl-replays");
-  },
-
-  getMCLReplayMeta(file: string): Promise<Record<string, unknown>> {
-    return request<Record<string, unknown>>(
-      `/api/mcl-replays/${encodeURIComponent(file)}/meta`,
-    );
-  },
-
-  getMCLReplayTicks(file: string, from: number, to: number): Promise<MCLTickResult[]> {
-    return request<MCLTickResult[]>(
-      `/api/mcl-replays/${encodeURIComponent(file)}/ticks?from=${from}&to=${to}`,
-    );
-  },
-
   health(): Promise<{ status: string }> {
     return request<{ status: string }>("/api/health");
   },
 
-  listRoutes(): Promise<string[]> {
-    return request<string[]>("/api/routes");
-  },
-
-  getRoute(name: string): Promise<RouteDefinition> {
-    return request<RouteDefinition>(`/api/routes/${encodeURIComponent(name)}`);
-  },
-
-  saveRoute(route: RouteDefinition): Promise<{ saved: boolean; file: string }> {
-    return request<{ saved: boolean; file: string }>("/api/routes", {
+  // Navigation API (Phase 5+)
+  navigate(
+    sessionId: string,
+    waypoints: Waypoint[],
+    followerConfig?: Partial<{ linear_velocity: number; waypoint_tolerance: number; max_angular_vel_deg: number; heading_gain: number; slowdown_radius: number }>,
+  ): Promise<NavResponse> {
+    return request<NavResponse>(`/api/session/${sessionId}/navigate`, {
       method: "POST",
-      body: JSON.stringify(route),
+      body: JSON.stringify({ waypoints, follower_config: followerConfig }),
     });
   },
 
-  runRoute(name: string, seed?: number): Promise<{ replay_file: string; result: RouteRunResult }> {
-    const query = seed === undefined ? "" : `?seed=${seed}`;
-    return request<{ replay_file: string; result: RouteRunResult }>(
-      `/api/routes/${encodeURIComponent(name)}/run${query}`,
-      { method: "POST" },
-    );
+  getNavStatus(sessionId: string): Promise<NavStatus> {
+    return request<NavStatus>(`/api/session/${sessionId}/navigate/status`);
+  },
+
+  cancelNav(sessionId: string): Promise<CancelNavResponse> {
+    return request<CancelNavResponse>(`/api/session/${sessionId}/navigate`, {
+      method: "DELETE",
+    });
+  },
+
+  tickAuto(sessionId: string): Promise<TickState> {
+    return request<TickState>(`/api/session/${sessionId}/tick`, {
+      method: "POST",
+      body: JSON.stringify({}),
+    });
   },
 };

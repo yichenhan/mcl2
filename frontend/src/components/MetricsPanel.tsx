@@ -24,11 +24,11 @@ export function MetricsPanel({ tick }: Props) {
   }
 
   const tickIndex = isTickState(tick) ? tick.tick : (tick.tick_count ?? null);
-  const nEff = tick.post_resample.n_eff;
-  const spread = isTickState(tick) ? tick.post_resample.spread : tick.cluster_stats.spread;
-  const radius90 = isTickState(tick) ? tick.post_resample.radius_90 : tick.cluster_stats.radius_90;
-  const gateAccepted = isTickState(tick) ? null : tick.gate.accepted;
-  const gateReason = isTickState(tick) ? null : tick.gate.reason;
+  const nEff = tick.post_resample?.n_eff ?? (isTickState(tick) ? 0 : (tick.n_eff ?? 0));
+  const spread = isTickState(tick) ? tick.post_resample?.spread : tick.cluster_stats?.spread;
+  const radius90 = isTickState(tick) ? tick.post_resample?.radius_90 : tick.cluster_stats?.radius_90;
+  const gateAccepted = isTickState(tick) ? null : (tick.gate?.accepted ?? null);
+  const gateReason = isTickState(tick) ? null : (tick.gate?.reason ?? null);
   const sensorLabels = ["L", "R", "F", "B"] as const;
 
   const residualClass = (value: number) => {
@@ -60,15 +60,15 @@ export function MetricsPanel({ tick }: Props) {
         <span>Valid sensors</span>
         <span
           className={
-            tick.valid_sensor_count === 0
+            (tick.valid_sensor_count ?? 0) === 0
               ? "font-semibold text-red-400"
-              : tick.valid_sensor_count < 4
+              : (tick.valid_sensor_count ?? 0) < 4
                 ? "text-amber-300"
                 : ""
           }
         >
-          {tick.valid_sensor_count}
-          {tick.valid_sensor_count === 0 ? " (BLIND)" : ""}
+          {tick.valid_sensor_count ?? 0}
+          {(tick.valid_sensor_count ?? 0) === 0 ? " (BLIND)" : ""}
         </span>
         <span>Active failures</span>
         <span

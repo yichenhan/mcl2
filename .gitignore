@@ -6,3 +6,17 @@ src/replays/
 # Build artifacts
 *.o
 src/route_bin
+backend/lib/
+backend/test_runner
+backend/server_bin
+backend/chaos_bin
+backend/route_bin
+
+# Unified session outputs
+sessions/
+
+# Temporary replay artifacts from tests
+tmp_replays*/
+tmp_replay*/
+src/tmp_replays*/
+src/tmp_replay*/
