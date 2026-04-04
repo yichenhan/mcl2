@@ -56,6 +56,7 @@ struct ControllerConfig {
     int32_t invalid_reading_mm = 9999;
     double tick_dt_sec = 0.05;
     int log_interval_ticks = 1;
+    size_t log_byte_budget_per_sec = 4096;
 
     // Legacy correction thresholds for application.
     double min_correction_delta_in = 0.5;

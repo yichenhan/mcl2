@@ -5,6 +5,8 @@
 #include "nlohmann/json.hpp"
 
 #include <array>
+#include <chrono>
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <string>
@@ -275,6 +277,8 @@ public:
 
     void set_log_interval_ticks(int n) { log_interval_ticks_ = n; }
     int log_interval_ticks() const { return log_interval_ticks_; }
+    void set_log_byte_budget_per_sec(size_t bytes) { log_byte_budget_per_sec_ = bytes; }
+    size_t log_byte_budget_per_sec() const { return log_byte_budget_per_sec_; }
 
     /** Emit compact tick log for an externally-built MCLTickResult (used by LocalizationController). */
     void log_tick_result(const MCLTickResult& result, double heading_deg) const;
@@ -285,12 +289,16 @@ private:
                   const MCLTickResult* tick_result = nullptr, double heading_deg = 0.0) const;
     GateDecision fail_decision(const char* reason) const;
     void fill_snapshot(PhaseSnapshot& out) const;
+    bool try_consume_log_budget(size_t bytes) const;
 
     MCLEngine engine_;
     GateConfig gate_config_;
     LogFn log_fn_;
     uint64_t tick_count_ = 0;
     int log_interval_ticks_ = 1;
+    size_t log_byte_budget_per_sec_ = 4096;
+    mutable std::chrono::steady_clock::time_point log_budget_window_start_{};
+    mutable size_t log_budget_bytes_used_ = 0;
 };
 
 } // namespace mcl

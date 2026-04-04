@@ -41,85 +41,122 @@ std::string iso_timestamp_utc() {
     return oss.str();
 }
 
-// Compact tick printf: [T=N||short_key]=value, ~18 chars/line avg.
-// Frontend expands short keys back to full TickState paths.
-void emit_compact_tick(uint64_t tick,
-                       const MCLTickResult& r,
-                       double heading_deg) {
-    const auto T = static_cast<unsigned long long>(tick);
-    auto pf = [&](const char* key, const char* fmt, ...) __attribute__((format(printf, 3, 4))) {
-        std::printf("[T=%llu||%s]=", T, key);
-        va_list args;
-        va_start(args, fmt);
-        std::vprintf(fmt, args);
-        va_end(args);
-        std::putchar('\n');
-        std::fflush(stdout);
-    };
-    auto pb = [&](const char* key, bool v) { pf(key, "%d", v ? 1 : 0); };
+void append_compact_line(std::ostringstream& oss, unsigned long long tick,
+                         const std::string& key, const std::string& value) {
+    oss << "[T=" << tick << "||" << key << "]=" << value << '\n';
+}
 
-    pf("tc", "%llu", T);
-    pf("oh", "%.3f", heading_deg);
-    pb("pg", !r.gate.accepted);
-    pf("ts", "%s", iso_timestamp_utc().c_str());
-    pf("vs", "%d", r.valid_sensor_count);
-    pb("us", r.update_skipped);
-    pf("ne", "%.3f", r.n_eff);
+void append_compact_bool(std::ostringstream& oss, unsigned long long tick,
+                         const std::string& key, bool value) {
+    append_compact_line(oss, tick, key, value ? "1" : "0");
+}
+
+void append_compact_float(std::ostringstream& oss, unsigned long long tick,
+                          const std::string& key, double value, int precision = 3) {
+    std::ostringstream value_stream;
+    value_stream << std::fixed << std::setprecision(precision) << value;
+    append_compact_line(oss, tick, key, value_stream.str());
+}
+
+void append_compact_int(std::ostringstream& oss, unsigned long long tick,
+                        const std::string& key, long long value) {
+    append_compact_line(oss, tick, key, std::to_string(value));
+}
+
+std::string build_compact_tick_message(uint64_t tick,
+                                       const MCLTickResult& r,
+                                       double heading_deg) {
+    const auto T = static_cast<unsigned long long>(tick);
+    std::ostringstream oss;
+
+    append_compact_int(oss, T, "tc", static_cast<long long>(T));
+    append_compact_float(oss, T, "oh", heading_deg);
+    append_compact_bool(oss, T, "pg", !r.gate.accepted);
+    append_compact_line(oss, T, "ts", iso_timestamp_utc());
+    append_compact_int(oss, T, "vs", r.valid_sensor_count);
+    append_compact_bool(oss, T, "us", r.update_skipped);
+    append_compact_float(oss, T, "ne", r.n_eff);
 
     for (int i = 0; i < 4; ++i)
-        pf(( std::string("or.") + std::to_string(i) ).c_str(), "%.3f", r.observed_readings[i]);
+        append_compact_float(oss, T, std::string("or.") + std::to_string(i), r.observed_readings[i]);
 
-    pf("op.x", "%.3f", r.raw_odom.x);
-    pf("op.y", "%.3f", r.raw_odom.y);
-    pf("op.t", "%.3f", r.raw_odom.theta);
+    append_compact_float(oss, T, "op.x", r.raw_odom.x);
+    append_compact_float(oss, T, "op.y", r.raw_odom.y);
+    append_compact_float(oss, T, "op.t", r.raw_odom.theta);
 
-    pf("re.x", "%.3f", r.raw_estimate.x);
-    pf("re.y", "%.3f", r.raw_estimate.y);
-    pf("re.t", "%.3f", r.raw_estimate.theta);
+    append_compact_float(oss, T, "re.x", r.raw_estimate.x);
+    append_compact_float(oss, T, "re.y", r.raw_estimate.y);
+    append_compact_float(oss, T, "re.t", r.raw_estimate.theta);
 
-    pf("cp.x", "%.3f", r.chassis_pose.x);
-    pf("cp.y", "%.3f", r.chassis_pose.y);
-    pf("cp.t", "%.3f", r.chassis_pose.theta);
+    append_compact_float(oss, T, "cp.x", r.chassis_pose.x);
+    append_compact_float(oss, T, "cp.y", r.chassis_pose.y);
+    append_compact_float(oss, T, "cp.t", r.chassis_pose.theta);
 
-    pf("cs.x", "%.3f", static_cast<double>(r.cluster_stats.centroid.x));
-    pf("cs.y", "%.3f", static_cast<double>(r.cluster_stats.centroid.y));
-    pf("cs.r", "%.3f", r.cluster_stats.radius_90);
-    pf("cs.s", "%.3f", r.cluster_stats.spread);
+    append_compact_float(oss, T, "cs.x", static_cast<double>(r.cluster_stats.centroid.x));
+    append_compact_float(oss, T, "cs.y", static_cast<double>(r.cluster_stats.centroid.y));
+    append_compact_float(oss, T, "cs.r", r.cluster_stats.radius_90);
+    append_compact_float(oss, T, "cs.s", r.cluster_stats.spread);
 
     const auto& g = r.gate;
-    pb("g.a", g.accepted);
-    pf("g.rsn", "%s", g.reason.c_str());
-    pf("g.r", "%.3f", g.radius_90_in);
-    pf("g.j", "%.3f", g.jump_in);
-    pf("g.s", "%.3f", g.spread_in);
-    pb("g.fcj", g.failed_centroid_jump);
-    pb("g.fr", g.failed_r90);
-    pb("g.fp", g.failed_passability);
-    pb("g.fres", g.failed_residual);
-    pb("g.wcj", g.would_fail_centroid_jump);
-    pb("g.wr", g.would_fail_r90);
-    pb("g.wp", g.would_fail_passability);
-    pb("g.wres", g.would_fail_residual);
-    pf("g.msr", "%.3f", g.max_sensor_residual_in);
-    pf("g.rt", "%.3f", g.residual_threshold_in);
-    pf("g.cj", "%.3f", g.centroid_jump_ft_per_s);
-    pf("g.ne", "%.3f", g.n_eff_at_gate);
+    append_compact_bool(oss, T, "g.a", g.accepted);
+    append_compact_line(oss, T, "g.rsn", g.reason);
+    append_compact_float(oss, T, "g.r", g.radius_90_in);
+    append_compact_float(oss, T, "g.j", g.jump_in);
+    append_compact_float(oss, T, "g.s", g.spread_in);
+    append_compact_bool(oss, T, "g.fcj", g.failed_centroid_jump);
+    append_compact_bool(oss, T, "g.fr", g.failed_r90);
+    append_compact_bool(oss, T, "g.fp", g.failed_passability);
+    append_compact_bool(oss, T, "g.fres", g.failed_residual);
+    append_compact_bool(oss, T, "g.wcj", g.would_fail_centroid_jump);
+    append_compact_bool(oss, T, "g.wr", g.would_fail_r90);
+    append_compact_bool(oss, T, "g.wp", g.would_fail_passability);
+    append_compact_bool(oss, T, "g.wres", g.would_fail_residual);
+    append_compact_float(oss, T, "g.msr", g.max_sensor_residual_in);
+    append_compact_float(oss, T, "g.rt", g.residual_threshold_in);
+    append_compact_float(oss, T, "g.cj", g.centroid_jump_ft_per_s);
+    append_compact_float(oss, T, "g.ne", g.n_eff_at_gate);
 
     for (int i = 0; i < 4; ++i)
-        pf(( std::string("pr.") + std::to_string(i) ).c_str(), "%.3f", r.mcl_predicted_readings[i]);
+        append_compact_float(oss, T, std::string("pr.") + std::to_string(i), r.mcl_predicted_readings[i]);
     for (int i = 0; i < 4; ++i)
-        pf(( std::string("sr.") + std::to_string(i) ).c_str(), "%.3f", r.mcl_sensor_residuals[i]);
+        append_compact_float(oss, T, std::string("sr.") + std::to_string(i), r.mcl_sensor_residuals[i]);
 
     auto ps = [&](const char* prefix, const PhaseSnapshot& s) {
-        pf(( std::string(prefix) + ".x" ).c_str(), "%.3f", static_cast<double>(s.estimate.x));
-        pf(( std::string(prefix) + ".y" ).c_str(), "%.3f", static_cast<double>(s.estimate.y));
-        pf(( std::string(prefix) + ".n" ).c_str(), "%.3f", s.n_eff);
-        pf(( std::string(prefix) + ".s" ).c_str(), "%.3f", s.spread);
-        pf(( std::string(prefix) + ".r" ).c_str(), "%.3f", s.radius_90);
+        append_compact_float(oss, T, std::string(prefix) + ".x", static_cast<double>(s.estimate.x));
+        append_compact_float(oss, T, std::string(prefix) + ".y", static_cast<double>(s.estimate.y));
+        append_compact_float(oss, T, std::string(prefix) + ".n", s.n_eff);
+        append_compact_float(oss, T, std::string(prefix) + ".s", s.spread);
+        append_compact_float(oss, T, std::string(prefix) + ".r", s.radius_90);
     };
     ps("pp", r.post_predict);
     ps("pu", r.post_update);
     ps("ps", r.post_resample);
+    return oss.str();
+}
+
+std::string build_compact_tick_summary(uint64_t tick,
+                                       const MCLTickResult& r,
+                                       double heading_deg) {
+    const auto T = static_cast<unsigned long long>(tick);
+    std::ostringstream oss;
+    append_compact_int(oss, T, "tc", static_cast<long long>(T));
+    append_compact_float(oss, T, "oh", heading_deg);
+    append_compact_bool(oss, T, "pg", !r.gate.accepted);
+    append_compact_int(oss, T, "vs", r.valid_sensor_count);
+    append_compact_bool(oss, T, "us", r.update_skipped);
+    append_compact_float(oss, T, "cp.x", r.chassis_pose.x);
+    append_compact_float(oss, T, "cp.y", r.chassis_pose.y);
+    append_compact_float(oss, T, "cp.t", r.chassis_pose.theta);
+    append_compact_bool(oss, T, "g.a", r.gate.accepted);
+    if (!r.gate.reason.empty()) {
+        append_compact_line(oss, T, "g.rsn", r.gate.reason);
+    }
+    return oss.str();
+}
+
+bool emit_compact_tick(FILE* stream, const std::string& payload) {
+    if (payload.empty()) return true;
+    return std::fwrite(payload.data(), 1, payload.size(), stream) == payload.size();
 }
 
 } // namespace
@@ -301,7 +338,7 @@ void MCLController::emit_log(const char* phase, nlohmann::json extra,
 #ifndef NDEBUG_LOG
     if (std::string(phase) == "tick" && tick_result != nullptr &&
         (log_interval_ticks_ <= 1 || tick_count_ % static_cast<uint64_t>(log_interval_ticks_) == 0)) {
-        emit_compact_tick(tick_count_, *tick_result, heading_deg);
+        log_tick_result(*tick_result, heading_deg);
     }
 #endif
 }
@@ -310,11 +347,41 @@ void MCLController::log_tick_result(const MCLTickResult& result, double heading_
 #ifndef NDEBUG_LOG
     if (log_interval_ticks_ <= 1
         || result.tick_count % static_cast<uint64_t>(log_interval_ticks_) == 0) {
-        emit_compact_tick(result.tick_count, result, heading_deg);
+        const std::string full_payload = build_compact_tick_message(result.tick_count, result, heading_deg);
+        if (try_consume_log_budget(full_payload.size())) {
+            if (emit_compact_tick(stdout, full_payload)) {
+                std::fflush(stdout);
+            }
+            return;
+        }
+
+        const std::string summary_payload = build_compact_tick_summary(result.tick_count, result, heading_deg);
+        if (try_consume_log_budget(summary_payload.size()) && emit_compact_tick(stdout, summary_payload)) {
+            std::fflush(stdout);
+        }
     }
 #else
     (void)result; (void)heading_deg;
 #endif
+}
+
+bool MCLController::try_consume_log_budget(size_t bytes) const {
+    if (log_byte_budget_per_sec_ == 0) return true;
+    if (bytes > log_byte_budget_per_sec_) return false;
+
+    const auto now = std::chrono::steady_clock::now();
+    if (log_budget_window_start_ == std::chrono::steady_clock::time_point{}
+        || now - log_budget_window_start_ >= std::chrono::seconds(1)) {
+        log_budget_window_start_ = now;
+        log_budget_bytes_used_ = 0;
+    }
+
+    if (log_budget_bytes_used_ + bytes > log_byte_budget_per_sec_) {
+        return false;
+    }
+
+    log_budget_bytes_used_ += bytes;
+    return true;
 }
 
 GateDecision MCLController::fail_decision(const char* reason) const {
