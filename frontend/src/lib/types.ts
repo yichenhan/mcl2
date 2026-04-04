@@ -69,16 +69,16 @@ export interface RobotState {
 export interface TickState {
   tick: number;
   timestamp_iso?: string;
-  ground_truth: RobotState;
+  ground_truth?: RobotState;
   observed_readings: [number, number, number, number];
   observed_heading: number;
   active_failures: string[];
   post_predict: MCLSnapshot;
   post_update: MCLSnapshot;
   post_resample: MCLSnapshot;
-  mcl_error: number;
+  mcl_error?: number;
   accepted_error?: number;
-  odom_error: number;
+  odom_error?: number;
   valid_sensor_count: number;
   update_skipped?: boolean;
   pose_gated?: boolean;
@@ -224,7 +224,7 @@ export interface MCLReplayFile {
 export type AnyTick = TickState | MCLTickResult;
 
 export function isTickState(tick: AnyTick): tick is TickState {
-  return "ground_truth" in tick;
+  return "post_resample" in tick;
 }
 
 export interface SessionStartRequest {

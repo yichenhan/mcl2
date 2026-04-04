@@ -2,7 +2,7 @@ import type { OverlayFlags, SessionMode } from "@/lib/types";
 
 export function getDefaultOverlayFlags(): OverlayFlags {
   return {
-    robotTruth: true,
+    robotTruth: false,
     odomPose: true,
     mclEstimate: true,
     acceptedEstimate: true,
@@ -12,8 +12,8 @@ export function getDefaultOverlayFlags(): OverlayFlags {
     sensorReadings: true,
     sensorResiduals: true,
     diffMclPose: true,
-    diffMclTruth: true,
-    diffPoseTruth: true,
+    diffMclTruth: false,
+    diffPoseTruth: false,
   };
 }
 

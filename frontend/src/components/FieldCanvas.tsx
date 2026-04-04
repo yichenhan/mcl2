@@ -373,24 +373,29 @@ export function FieldCanvas({
 
     if (isTickState(tick)) {
       const gt = tick.ground_truth;
+      const hasGt = gt !== undefined;
       const hasKidnap = parsedFailures.some((f) => f.type === "kidnap");
       const hasOdomSpike = parsedFailures.some((f) => f.type === "odom_spike");
       const hasHeadingBias = parsedFailures.some((f) => f.type === "heading_bias");
 
       // Primary robot icon: chassis_pose (MCL-corrected, what robot believes)
-      // Falls back to accepted_estimate, then ground_truth for old replays.
+      // Falls back to accepted_estimate, then raw_estimate, then ground_truth for old replays.
       const robotPose = tick.chassis_pose
         ?? (tick.accepted_estimate
           ? { x: tick.accepted_estimate.x, y: tick.accepted_estimate.y, theta: tick.observed_heading }
-          : { x: gt.x, y: gt.y, theta: gt.heading_deg });
+          : (tick.raw_estimate
+            ? { x: tick.raw_estimate.x, y: tick.raw_estimate.y, theta: tick.raw_estimate.theta }
+            : (hasGt
+              ? { x: gt.x, y: gt.y, theta: gt.heading_deg }
+              : { x: 0, y: 0, theta: 0 })));
       const robotDir = headingToDir(robotPose.theta);
       const robotPerp = { x: robotDir.y, y: -robotDir.x };
       const robotFront = toCanvas(robotPose.x + robotDir.x * 3, robotPose.y + robotDir.y * 3);
       const robotLeft = toCanvas(robotPose.x - robotDir.x * 2 + robotPerp.x * 2, robotPose.y - robotDir.y * 2 + robotPerp.y * 2);
       const robotRight = toCanvas(robotPose.x - robotDir.x * 2 - robotPerp.x * 2, robotPose.y - robotDir.y * 2 - robotPerp.y * 2);
 
-      // Ground truth overlay (debug -- shown when robotTruth flag is ON)
-      if (flags.robotTruth) {
+      // Ground truth overlay (debug -- shown when robotTruth flag is ON and data exists)
+      if (flags.robotTruth && hasGt) {
         const dir = headingToDir(gt.heading_deg);
         const perp = { x: dir.y, y: -dir.x };
         const front = toCanvas(gt.x + dir.x * 3, gt.y + dir.y * 3);
@@ -546,7 +551,7 @@ export function FieldCanvas({
         ctx.stroke();
         ctx.setLineDash([]);
       }
-      if (tick.raw_estimate && flags.diffMclTruth) {
+      if (hasGt && tick.raw_estimate && flags.diffMclTruth) {
         const a = toCanvas(tick.raw_estimate.x, tick.raw_estimate.y);
         const b = toCanvas(gt.x, gt.y);
         ctx.strokeStyle = "rgba(244,114,182,0.8)";
@@ -557,7 +562,7 @@ export function FieldCanvas({
         ctx.stroke();
         ctx.setLineDash([]);
       }
-      if (tick.odom_pose && flags.diffPoseTruth) {
+      if (hasGt && tick.odom_pose && flags.diffPoseTruth) {
         const a = toCanvas(tick.odom_pose.x, tick.odom_pose.y);
         const b = toCanvas(gt.x, gt.y);
         ctx.strokeStyle = "rgba(34,197,94,0.8)";

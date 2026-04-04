@@ -44,12 +44,12 @@ export function MetricsPanel({ tick }: Props) {
         <span>Tick</span>
         <span>{tickIndex ?? "N/A"}</span>
         <span>MCL error</span>
-        <span className={isTickState(tick) ? "" : "text-zinc-600"}>
-          {isTickState(tick) ? `${formatNumber(tick.mcl_error)} in` : "N/A"}
+        <span className={isTickState(tick) && tick.mcl_error != null ? "" : "text-zinc-600"}>
+          {isTickState(tick) && tick.mcl_error != null ? `${formatNumber(tick.mcl_error)} in` : "N/A"}
         </span>
         <span>Odom error</span>
-        <span className={isTickState(tick) ? "" : "text-zinc-600"}>
-          {isTickState(tick) ? `${formatNumber(tick.odom_error)} in` : "N/A"}
+        <span className={isTickState(tick) && tick.odom_error != null ? "" : "text-zinc-600"}>
+          {isTickState(tick) && tick.odom_error != null ? `${formatNumber(tick.odom_error)} in` : "N/A"}
         </span>
         <span>N eff</span>
         <span>{formatNumber(nEff)}</span>

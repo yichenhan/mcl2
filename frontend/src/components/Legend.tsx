@@ -193,8 +193,8 @@ export function Legend({ flags, availability, onToggle, tick }: Props) {
         })}
       </div>
       <div className="mt-3 border-t border-zinc-800 pt-2 text-xs text-zinc-300">
-        <div>MCL error: {tick ? tick.mcl_error.toFixed(2) : "-"} in</div>
-        <div>Odom error: {tick ? tick.odom_error.toFixed(2) : "-"} in</div>
+        <div>MCL error: {tick?.mcl_error != null ? tick.mcl_error.toFixed(2) + " in" : "-"}</div>
+        <div>Odom error: {tick?.odom_error != null ? tick.odom_error.toFixed(2) + " in" : "-"}</div>
         <div>R90: {tick?.post_resample?.radius_90?.toFixed(2) ?? "-"} in</div>
       </div>
     </section>
