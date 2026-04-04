@@ -3,8 +3,6 @@
 #include "distance_localization.hpp"
 #include "mcl/localization_controller.hpp"
 
-#include <cstdio>
-
 namespace mcl {
 
 // ---------------------------------------------------------------------------
@@ -109,15 +107,7 @@ public:
             static_cast<double>(final_cp.y),
             static_cast<double>(final_cp.theta)
         };
-
-        // Emit chassis_pose compact log lines (appended after MCL tick log).
-        const auto tick_id = static_cast<unsigned long long>(out.tick_count);
-        std::printf("[T=%llu||cp.x]=%.3f\n", tick_id, result.chassis_pose.x);
-        std::fflush(stdout);
-        std::printf("[T=%llu||cp.y]=%.3f\n", tick_id, result.chassis_pose.y);
-        std::fflush(stdout);
-        std::printf("[T=%llu||cp.t]=%.3f\n", tick_id, result.chassis_pose.theta);
-        std::fflush(stdout);
+        result.mcl_output.chassis_pose = result.chassis_pose;
 
         return result;
     }

@@ -139,7 +139,7 @@ function parseTickKVLines(text: string): unknown[] {
       if (COMPACT_BOOL_PATHS.has(fullKey)) {
         rawVal = rawVal === "1" ? "true" : "false";
       }
-      if (!tickMap.has(tickNum)) tickMap.set(tickNum, {});
+      if (!tickMap.has(tickNum)) tickMap.set(tickNum, { tick_count: tickNum });
       setNestedValue(tickMap.get(tickNum)!, fullKey, rawVal);
     }
   }

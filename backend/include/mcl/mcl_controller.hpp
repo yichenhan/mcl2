@@ -72,6 +72,7 @@ struct MCLTickResult {
     uint64_t tick_count = 0;
     Pose raw_odom{};
     Pose raw_estimate{};
+    Pose chassis_pose{};
     std::array<double, 4> observed_readings{ -1.0, -1.0, -1.0, -1.0 };
     std::array<double, 4> mcl_sensor_residuals{ 0.0, 0.0, 0.0, 0.0 };
     std::array<double, 4> mcl_predicted_readings{ -1.0, -1.0, -1.0, -1.0 };
@@ -184,6 +185,7 @@ inline void to_json(nlohmann::json& j, const MCLTickResult& r) {
         { "tick_count", r.tick_count },
         { "raw_odom", r.raw_odom },
         { "raw_estimate", r.raw_estimate },
+        { "chassis_pose", r.chassis_pose },
         { "observed_readings", r.observed_readings },
         { "mcl_sensor_residuals", r.mcl_sensor_residuals },
         { "mcl_predicted_readings", r.mcl_predicted_readings },
@@ -210,6 +212,7 @@ inline void from_json(const nlohmann::json& j, MCLTickResult& r) {
     r.raw_odom = j.contains("raw_odom") ? j["raw_odom"].get<Pose>()
                  : j.value("odom_pose", Pose{});
     r.raw_estimate = j.value("raw_estimate", Pose{});
+    r.chassis_pose = j.value("chassis_pose", Pose{});
     r.observed_readings = j.value("observed_readings", std::array<double, 4>{ -1.0, -1.0, -1.0, -1.0 });
     r.mcl_sensor_residuals = j.value("mcl_sensor_residuals", std::array<double, 4>{ 0.0, 0.0, 0.0, 0.0 });
     r.mcl_predicted_readings = j.value("mcl_predicted_readings", std::array<double, 4>{ -1.0, -1.0, -1.0, -1.0 });

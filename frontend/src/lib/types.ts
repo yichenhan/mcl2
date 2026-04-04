@@ -200,6 +200,7 @@ export interface MCLTickResult {
   tick_count?: number;
   raw_odom?: Pose;
   raw_estimate: Pose;
+  chassis_pose?: Pose;
   observed_readings?: [number, number, number, number];
   mcl_sensor_residuals?: [number, number, number, number];
   mcl_predicted_readings?: [number, number, number, number];

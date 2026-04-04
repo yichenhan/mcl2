@@ -77,6 +77,10 @@ void emit_compact_tick(uint64_t tick,
     pf("re.y", "%.3f", r.raw_estimate.y);
     pf("re.t", "%.3f", r.raw_estimate.theta);
 
+    pf("cp.x", "%.3f", r.chassis_pose.x);
+    pf("cp.y", "%.3f", r.chassis_pose.y);
+    pf("cp.t", "%.3f", r.chassis_pose.theta);
+
     pf("cs.x", "%.3f", static_cast<double>(r.cluster_stats.centroid.x));
     pf("cs.y", "%.3f", static_cast<double>(r.cluster_stats.centroid.y));
     pf("cs.r", "%.3f", r.cluster_stats.radius_90);

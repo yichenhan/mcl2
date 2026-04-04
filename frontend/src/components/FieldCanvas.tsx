@@ -568,16 +568,27 @@ export function FieldCanvas({
         ctx.arc(c.x, c.y, tick.post_resample.radius_90 * scale, 0, Math.PI * 2);
         ctx.stroke();
       }
-      if (tick.raw_estimate && tick.raw_odom && flags.diffMclPose) {
+      if (tick.raw_estimate && tick.chassis_pose && flags.diffMclPose) {
         const a = toCanvas(tick.raw_estimate.x, tick.raw_estimate.y);
-        const b = toCanvas(tick.raw_odom.x, tick.raw_odom.y);
+        const b = toCanvas(tick.chassis_pose.x, tick.chassis_pose.y);
+        const dx = tick.raw_estimate.x - tick.chassis_pose.x;
+        const dy = tick.raw_estimate.y - tick.chassis_pose.y;
+        const dist = Math.hypot(dx, dy);
         ctx.strokeStyle = "rgba(229,231,235,0.8)";
         ctx.setLineDash([4, 4]);
+        ctx.lineWidth = 1.5;
         ctx.beginPath();
         ctx.moveTo(a.x, a.y);
         ctx.lineTo(b.x, b.y);
         ctx.stroke();
         ctx.setLineDash([]);
+        const mx = (a.x + b.x) / 2;
+        const my = (a.y + b.y) / 2;
+        ctx.fillStyle = "rgba(229,231,235,0.95)";
+        ctx.font = "10px sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "bottom";
+        ctx.fillText(`${dist.toFixed(2)} in`, mx, my - 4);
       }
       if (hasGt && tick.raw_estimate && flags.diffMclTruth) {
         const a = toCanvas(tick.raw_estimate.x, tick.raw_estimate.y);

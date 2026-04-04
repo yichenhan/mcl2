@@ -18,6 +18,7 @@ const COMPACT_KEY_MAP = {
   "or.2": "observed_readings.2", "or.3": "observed_readings.3",
   "op.x": "odom_pose.x", "op.y": "odom_pose.y", "op.t": "odom_pose.theta",
   "re.x": "raw_estimate.x", "re.y": "raw_estimate.y", "re.t": "raw_estimate.theta",
+  "cp.x": "chassis_pose.x", "cp.y": "chassis_pose.y", "cp.t": "chassis_pose.theta",
   "cs.x": "cluster_stats.centroid.x", "cs.y": "cluster_stats.centroid.y",
   "cs.r": "cluster_stats.radius_90", "cs.s": "cluster_stats.spread",
   "g.a": "gate.accepted", "g.rsn": "gate.reason",
@@ -79,7 +80,7 @@ function parseTicks(text) {
       const fullKey = COMPACT_KEY_MAP[shortKey] ?? shortKey;
       rawVal = compact[3];
       if (BOOL_PATHS.has(fullKey)) rawVal = rawVal === "1" ? "true" : "false";
-      if (!tickMap.has(tickNum)) tickMap.set(tickNum, {});
+      if (!tickMap.has(tickNum)) tickMap.set(tickNum, { tick_count: tickNum });
       setNested(tickMap.get(tickNum), fullKey, rawVal);
       continue;
     }

@@ -9,9 +9,30 @@ interface Props {
   tick: AnyTick | null;
 }
 
-function formatNumber(v: number | null): string {
-  if (v === null || Number.isNaN(v)) return "-";
-  return v.toFixed(3);
+function fmt(v: unknown, decimals = 3): string {
+  if (v == null) return "-";
+  const n = typeof v === "number" ? v : Number(v);
+  if (!Number.isFinite(n)) return "-";
+  return n.toFixed(decimals);
+}
+
+function Row({ label, value, unit, className }: { label: string; value: string; unit?: string; className?: string }) {
+  return (
+    <>
+      <span className="text-zinc-400">{label}</span>
+      <span className={className ?? "text-zinc-200"}>
+        {value}{unit ? ` ${unit}` : ""}
+      </span>
+    </>
+  );
+}
+
+function SectionHeader({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="col-span-2 mt-2 border-t border-zinc-800 pt-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
+      {children}
+    </div>
+  );
 }
 
 export function MetricsPanel({ tick }: Props) {
@@ -23,138 +44,148 @@ export function MetricsPanel({ tick }: Props) {
     );
   }
 
-  const tickIndex = isTickState(tick) ? tick.tick : (tick.tick_count ?? null);
-  const nEff = tick.post_resample?.n_eff ?? (isTickState(tick) ? 0 : (tick.n_eff ?? 0));
-  const spread = isTickState(tick) ? tick.post_resample?.spread : tick.cluster_stats?.spread;
-  const radius90 = isTickState(tick) ? tick.post_resample?.radius_90 : tick.cluster_stats?.radius_90;
-  const gateAccepted = isTickState(tick) ? null : (tick.gate?.accepted ?? null);
-  const gateReason = isTickState(tick) ? null : (tick.gate?.reason ?? null);
+  const ts = isTickState(tick) ? tick : null;
+  const mcl = !isTickState(tick) ? tick : null;
+  const tickIndex = ts ? ts.tick : (mcl?.tick_count ?? null);
+  const nEff = tick.post_update?.n_eff ?? (mcl?.n_eff ?? 0);
+  const totalParticles = tick.post_resample?.n_eff ?? nEff;
+  const nEffPct = totalParticles > 0 ? (nEff / totalParticles) * 100 : 0;
+  const spread = ts ? ts.post_resample?.spread : mcl?.cluster_stats?.spread;
+  const radius90 = ts ? ts.post_resample?.radius_90 : mcl?.cluster_stats?.radius_90;
+  const gate = ts?.gate_decision ?? mcl?.gate ?? null;
   const sensorLabels = ["L", "R", "F", "B"] as const;
 
-  const residualClass = (value: number) => {
-    if (value < 1.5) return "text-emerald-300";
-    if (value < 4.0) return "text-amber-300";
-    return "text-red-300";
-  };
+  const nEffColor =
+    nEffPct > 50 ? "text-emerald-400" :
+    nEffPct > 20 ? "text-amber-300" :
+    "text-red-400";
+
+  const sensorCountColor =
+    (tick.valid_sensor_count ?? 0) === 0 ? "font-semibold text-red-400" :
+    (tick.valid_sensor_count ?? 0) < 4 ? "text-amber-300" :
+    "text-zinc-200";
+
+  const residualColor = (v: number) =>
+    v < 1.5 ? "text-emerald-300" : v < 4.0 ? "text-amber-300" : "text-red-300";
 
   return (
-    <div className="rounded border border-zinc-700 p-3 text-sm">
-      <h3 className="mb-2 text-sm font-semibold">Metrics</h3>
-      <div className="grid grid-cols-2 gap-x-3 gap-y-1">
-        <span>Tick</span>
-        <span>{tickIndex ?? "N/A"}</span>
-        <span>MCL error</span>
-        <span className={isTickState(tick) && tick.mcl_error != null ? "" : "text-zinc-600"}>
-          {isTickState(tick) && tick.mcl_error != null ? `${formatNumber(tick.mcl_error)} in` : "N/A"}
-        </span>
-        <span>Odom error</span>
-        <span className={isTickState(tick) && tick.odom_error != null ? "" : "text-zinc-600"}>
-          {isTickState(tick) && tick.odom_error != null ? `${formatNumber(tick.odom_error)} in` : "N/A"}
-        </span>
-        <span>N eff</span>
-        <span>{formatNumber(nEff)}</span>
-        <span>Spread</span>
-        <span>{formatNumber(spread ?? null)} in</span>
-        <span>Radius 90</span>
-        <span>{formatNumber(radius90 ?? null)} in</span>
-        <span>Valid sensors</span>
-        <span
-          className={
-            (tick.valid_sensor_count ?? 0) === 0
-              ? "font-semibold text-red-400"
-              : (tick.valid_sensor_count ?? 0) < 4
-                ? "text-amber-300"
-                : ""
-          }
-        >
-          {tick.valid_sensor_count ?? 0}
-          {(tick.valid_sensor_count ?? 0) === 0 ? " (BLIND)" : ""}
-        </span>
-        <span>Active failures</span>
-        <span
-          className={
-            !isTickState(tick)
-              ? "text-zinc-600"
-              : tick.active_failures.length === 0
-              ? "text-emerald-700"
-              : tick.active_failures.some((f) => f.includes("kidnap"))
-                ? "text-red-300"
-                : "text-amber-300"
-          }
-        >
-          {isTickState(tick) ? tick.active_failures.length : "N/A"}
-        </span>
-        <span>Gate</span>
-        <span className={gateAccepted === null ? "text-zinc-600" : gateAccepted ? "text-emerald-400" : "text-red-300"}>
-          {gateAccepted === null ? "N/A" : gateAccepted ? "accepted" : "rejected"}
-        </span>
+    <div className="rounded border border-zinc-700 p-3 text-xs">
+      <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
+
+        {/* ─── General ─── */}
+        <Row label="Tick" value={tickIndex != null ? String(tickIndex) : "N/A"} />
+        <Row label="Sensors" value={`${tick.valid_sensor_count ?? 0} / 4`} className={sensorCountColor} />
+
+        {/* ─── Particle Filter ─── */}
+        <SectionHeader>Particle Filter</SectionHeader>
+        <Row label="N eff" value={`${fmt(nEff, 1)} / ${fmt(totalParticles, 0)}`} className={nEffColor} />
+        <Row label="Utilization" value={`${fmt(nEffPct, 1)}%`} className={nEffColor} />
+        <Row label="Spread" value={fmt(spread)} unit="in" />
+        <Row label="R90" value={fmt(radius90)} unit="in" />
+
+        {/* ─── Gate ─── */}
+        <SectionHeader>Gate Decision</SectionHeader>
+        <Row
+          label="Status"
+          value={gate ? (gate.accepted ? "Accepted" : "Rejected") : "N/A"}
+          className={!gate ? "text-zinc-600" : gate.accepted ? "text-emerald-400" : "text-red-400"}
+        />
+        {gate && !gate.accepted && gate.reason ? (
+          <Row label="Reason" value={gate.reason} className="text-zinc-300" />
+        ) : null}
+        {gate && gate.accepted && ts?.chassis_pose && ts?.raw_odom ? (
+          <Row
+            label="Correction"
+            value={fmt(Math.hypot(ts.chassis_pose.x - ts.raw_odom.x, ts.chassis_pose.y - ts.raw_odom.y), 2)}
+            unit="in"
+            className="text-emerald-300"
+          />
+        ) : null}
+        {gate ? (
+          <>
+            <Row label="R90" value={fmt(gate.radius_90_in)} unit="in" className={gate.failed_r90 ? "text-red-400" : "text-zinc-200"} />
+            <Row label="Jump" value={fmt(gate.jump_in)} unit="in" className={gate.failed_centroid_jump ? "text-red-400" : "text-zinc-200"} />
+            <Row label="Max residual" value={fmt(gate.max_sensor_residual_in)} unit="in" className={gate.failed_residual ? "text-red-400" : "text-zinc-200"} />
+          </>
+        ) : null}
+
+        {/* ─── Position ─── */}
+        {ts ? (
+          <>
+            <SectionHeader>Position (inches)</SectionHeader>
+            <div className="col-span-2 grid grid-cols-4 gap-y-0.5 text-zinc-400">
+              <span />
+              <span className="text-center text-[10px] font-medium text-zinc-500">X</span>
+              <span className="text-center text-[10px] font-medium text-zinc-500">Y</span>
+              <span className="text-center text-[10px] font-medium text-zinc-500">θ</span>
+
+              <span className="text-cyan-400">Chassis</span>
+              <span className="text-center text-zinc-200">{ts.chassis_pose ? fmt(ts.chassis_pose.x) : "-"}</span>
+              <span className="text-center text-zinc-200">{ts.chassis_pose ? fmt(ts.chassis_pose.y) : "-"}</span>
+              <span className="text-center text-zinc-200">{ts.chassis_pose ? fmt(ts.chassis_pose.theta, 1) : "-"}</span>
+
+              <span className="text-blue-400">MCL</span>
+              <span className="text-center text-zinc-200">{ts.raw_estimate ? fmt(ts.raw_estimate.x) : "-"}</span>
+              <span className="text-center text-zinc-200">{ts.raw_estimate ? fmt(ts.raw_estimate.y) : "-"}</span>
+              <span className="text-center text-zinc-200">{ts.raw_estimate ? fmt(ts.raw_estimate.theta, 1) : "-"}</span>
+
+              <span className="text-emerald-400">Raw Odom</span>
+              <span className="text-center text-zinc-200">{ts.raw_odom ? fmt(ts.raw_odom.x) : "-"}</span>
+              <span className="text-center text-zinc-200">{ts.raw_odom ? fmt(ts.raw_odom.y) : "-"}</span>
+              <span className="text-center text-zinc-200">{ts.raw_odom ? fmt(ts.raw_odom.theta, 1) : "-"}</span>
+            </div>
+          </>
+        ) : null}
+
+        {/* ─── Sensors ─── */}
+        {(() => {
+          const readings = ts?.observed_readings ?? mcl?.observed_readings;
+          const residuals = ts?.sensor_residuals ?? mcl?.mcl_sensor_residuals;
+          const predicted = ts?.mcl_predicted_readings ?? mcl?.mcl_predicted_readings;
+          if (!readings) return null;
+          return (
+            <>
+              <SectionHeader>Sensors</SectionHeader>
+              <div className="col-span-2 grid grid-cols-4 gap-y-0.5 text-zinc-400">
+                <span className="text-[10px] font-medium text-zinc-500">Sensor</span>
+                <span className="text-center text-[10px] font-medium text-zinc-500">Read</span>
+                <span className="text-center text-[10px] font-medium text-zinc-500">Pred</span>
+                <span className="text-center text-[10px] font-medium text-zinc-500">Resid</span>
+                {sensorLabels.map((label, i) => {
+                  const reading = readings[i] ?? -1;
+                  const pred = predicted?.[i] ?? -1;
+                  const residual = residuals?.[i] ?? 0;
+                  const invalid = reading < 0;
+                  return (
+                    <Fragment key={label}>
+                      <span className="text-zinc-200">{label}</span>
+                      <span className={`text-center ${invalid ? "text-zinc-600" : "text-zinc-300"}`}>
+                        {invalid ? "—" : fmt(reading, 1)}
+                      </span>
+                      <span className={`text-center ${invalid || pred < 0 ? "text-zinc-600" : "text-zinc-300"}`}>
+                        {invalid || pred < 0 ? "—" : fmt(pred, 1)}
+                      </span>
+                      <span className={`text-center ${invalid ? "text-zinc-600" : residualColor(residual)}`}>
+                        {invalid ? "—" : fmt(residual, 2)}
+                      </span>
+                    </Fragment>
+                  );
+                })}
+              </div>
+            </>
+          );
+        })()}
+
+        {/* ─── Failures ─── */}
+        {ts && ts.active_failures.length > 0 ? (
+          <>
+            <SectionHeader>Active Failures</SectionHeader>
+            <div className="col-span-2 text-amber-300">
+              {ts.active_failures.join(", ")}
+            </div>
+          </>
+        ) : null}
       </div>
-      {isTickState(tick) && tick.active_failures.length > 0 ? (
-        <div className="mt-2 text-xs text-amber-300">
-          {tick.active_failures.join(", ")}
-        </div>
-      ) : null}
-      {!isTickState(tick) && gateReason ? (
-        <div className="mt-2 text-xs text-zinc-300">Reason: {gateReason}</div>
-      ) : null}
-
-      {/* Position debug section */}
-      {isTickState(tick) ? (
-        <div className="mt-3 border-t border-zinc-800 pt-2 text-xs">
-          <div className="mb-1 font-semibold text-zinc-300">Position (inches)</div>
-          <div className="grid grid-cols-4 gap-y-1 text-zinc-400">
-            <span />
-            <span className="text-center">X</span>
-            <span className="text-center">Y</span>
-            <span className="text-center">θ</span>
-
-            <span className="text-cyan-400">Chassis</span>
-            <span className="text-center text-zinc-200">{tick.chassis_pose ? formatNumber(tick.chassis_pose.x) : "-"}</span>
-            <span className="text-center text-zinc-200">{tick.chassis_pose ? formatNumber(tick.chassis_pose.y) : "-"}</span>
-            <span className="text-center text-zinc-200">{tick.chassis_pose ? formatNumber(tick.chassis_pose.theta) : "-"}</span>
-
-            <span className="text-blue-400">MCL</span>
-            <span className="text-center text-zinc-200">{tick.raw_estimate ? formatNumber(tick.raw_estimate.x) : "-"}</span>
-            <span className="text-center text-zinc-200">{tick.raw_estimate ? formatNumber(tick.raw_estimate.y) : "-"}</span>
-            <span className="text-center text-zinc-200">{tick.raw_estimate ? formatNumber(tick.raw_estimate.theta) : "-"}</span>
-
-            <span className="text-emerald-400">Raw Odom</span>
-            <span className="text-center text-zinc-200">{tick.raw_odom ? formatNumber(tick.raw_odom.x) : "-"}</span>
-            <span className="text-center text-zinc-200">{tick.raw_odom ? formatNumber(tick.raw_odom.y) : "-"}</span>
-            <span className="text-center text-zinc-200">{tick.raw_odom ? formatNumber(tick.raw_odom.theta) : "-"}</span>
-          </div>
-        </div>
-      ) : null}
-
-      {!isTickState(tick) && tick.observed_readings && tick.mcl_sensor_residuals ? (
-        <div className="mt-3 border-t border-zinc-800 pt-2 text-xs">
-          <div className="mb-1 font-semibold text-zinc-300">Sensor Diagnostics</div>
-          <div className="grid grid-cols-3 gap-y-1 text-zinc-400">
-            <span>Sensor</span>
-            <span>Reading</span>
-            <span>Residual</span>
-            {sensorLabels.map((label, i) => {
-              const reading = tick.observed_readings?.[i] ?? -1;
-              const residual = tick.mcl_sensor_residuals?.[i] ?? 0;
-              const readingText = reading < 0 ? "invalid" : `${formatNumber(reading)} in`;
-              const residualText = reading < 0 ? "-" : `${formatNumber(residual)} in`;
-              return (
-                <Fragment key={label}>
-                  <span className="text-zinc-200">
-                    {label}
-                  </span>
-                  <span className={reading < 0 ? "text-zinc-600" : "text-zinc-300"}>
-                    {readingText}
-                  </span>
-                  <span className={reading < 0 ? "text-zinc-600" : residualClass(residual)}>
-                    {residualText}
-                  </span>
-                </Fragment>
-              );
-            })}
-          </div>
-        </div>
-      ) : null}
     </div>
   );
 }

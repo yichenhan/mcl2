@@ -198,6 +198,8 @@ TickOutput LocalizationController::tick_mcl(const TickInput& input) {
     }
     fill_snapshot(*mcl_, out.post_update);
 
+    out.n_eff = mcl_->n_eff();
+
     mcl_->resample();
     fill_snapshot(*mcl_, out.post_resample);
 
@@ -233,7 +235,6 @@ TickOutput LocalizationController::tick_mcl(const TickInput& input) {
     prev_estimate_.theta = heading_deg;
 
     out.cluster_stats = mcl_->cluster_stats();
-    out.n_eff = mcl_->n_eff();
     {
         const auto& sensors = mcl_->engine().config().sensors;
         const distance_loc::Vec2 pos{ raw_estimate_.x, raw_estimate_.y };
@@ -264,6 +265,7 @@ TickOutput LocalizationController::tick_mcl(const TickInput& input) {
         accepted_pose_ = raw_estimate_;
     }
     out.accepted_pose = accepted_pose_;
+    out.chassis_pose = accepted_pose_;
 
     mcl_->log_tick_result(out, wrap_heading(input.imu_heading_deg));
     return out;
@@ -294,6 +296,7 @@ TickOutput LocalizationController::tick_raywall(const TickInput& input) {
         accepted_pose_.y = input.odom_pose.y;
         accepted_pose_.theta = wrap_heading(input.imu_heading_deg);
         out.accepted_pose = accepted_pose_;
+        out.chassis_pose = accepted_pose_;
         out.correction_distance_in = 0.0;
         return out;
     }
@@ -317,6 +320,7 @@ TickOutput LocalizationController::tick_raywall(const TickInput& input) {
         accepted_pose_.y = input.odom_pose.y;
         accepted_pose_.theta = wrap_heading(input.imu_heading_deg);
         out.accepted_pose = accepted_pose_;
+        out.chassis_pose = accepted_pose_;
         out.correction_distance_in = 0.0;
         return out;
     }
@@ -342,6 +346,7 @@ TickOutput LocalizationController::tick_raywall(const TickInput& input) {
         out.correction_applied = false;
     }
     out.accepted_pose = accepted_pose_;
+    out.chassis_pose = accepted_pose_;
 
     return out;
 }

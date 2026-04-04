@@ -140,4 +140,19 @@ more garbage
     expect(ticks[0].observed_heading).toBe(45.0);
     expect(ticks[0].cluster_stats?.radius_90).toBe(12.5);
   });
+
+  it("uses the compact tick id even when tc is missing", () => {
+    const partial = `
+[T=7||cp.x]=12.34
+[T=7||cp.y]=56.78
+[T=7||cp.t]=90.0
+    `.trim();
+    const ticks = parseReplayText(partial);
+    expect(ticks).toHaveLength(1);
+    expect(ticks[0].tick).toBe(7);
+    expect(ticks[0].chassis_pose).toBeDefined();
+    expect(ticks[0].chassis_pose!.x).toBeCloseTo(12.34);
+    expect(ticks[0].chassis_pose!.y).toBeCloseTo(56.78);
+    expect(ticks[0].chassis_pose!.theta).toBeCloseTo(90.0);
+  });
 });
