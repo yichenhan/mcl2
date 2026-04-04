@@ -1,5 +1,7 @@
 #pragma once
 
+#include <atomic>
+
 #include "distance_localization.hpp"
 #include "mcl/localization_controller.hpp"
 
@@ -91,7 +93,7 @@ public:
         result.correction_applied = out.gate.accepted;
         result.correction_distance_in = out.correction_distance_in;
 
-        if (out.gate.accepted) {
+        if (out.gate.accepted && corrections_enabled_.load(std::memory_order_relaxed)) {
             // Only correct X/Y. Heading is trusted from odom/IMU directly.
             odom_offset_.x = out.accepted_pose.x - raw_x;
             odom_offset_.y = out.accepted_pose.y - raw_y;
@@ -121,6 +123,13 @@ public:
     Pose get_accepted_pose() const { return controller_.get_accepted_pose(); }
     Pose get_raw_estimate() const  { return controller_.get_raw_estimate(); }
 
+    void set_corrections_enabled(bool enabled) {
+        corrections_enabled_.store(enabled, std::memory_order_relaxed);
+    }
+    bool corrections_enabled() const {
+        return corrections_enabled_.load(std::memory_order_relaxed);
+    }
+
     // Expose accumulated odom offset for testing.
     const Pose& odom_offset() const { return odom_offset_; }
 
@@ -128,7 +137,8 @@ private:
     T& chassis_;
     ISensorProvider& sensor_provider_;
     LocalizationController controller_;
-    Pose odom_offset_;  // accumulated X/Y correction applied to chassis
+    Pose odom_offset_;
+    std::atomic<bool> corrections_enabled_{true};
 };
 
 } // namespace mcl

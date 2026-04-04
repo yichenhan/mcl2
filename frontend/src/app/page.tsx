@@ -8,6 +8,7 @@ import { GateStatus } from "@/components/GateStatus";
 import { Legend } from "@/components/Legend";
 import { MetricsPanel } from "@/components/MetricsPanel";
 import { SessionSetup } from "@/components/SessionSetup";
+import { TimeSeriesPanel } from "@/components/TimeSeriesPanel";
 import { TransportControls } from "@/components/TransportControls";
 import { useUnifiedSession } from "@/hooks/useUnifiedSession";
 import { useWaypointEditor } from "@/hooks/useWaypointEditor";
@@ -109,7 +110,11 @@ export default function Home() {
   }, [session, waypointEditor]);
 
   return (
-    <main className="relative flex min-h-screen flex-col bg-zinc-950 p-4 text-zinc-100">
+    <main
+      className={`relative flex min-h-screen flex-col bg-zinc-950 p-4 text-zinc-100 ${
+        !showSetup && session.mode === "replay" ? "pb-[min(420px,50vh)]" : ""
+      }`}
+    >
       {showSetup ? (
         <div
           className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-zinc-950/98 backdrop-blur-sm"
@@ -188,20 +193,6 @@ export default function Home() {
           <div className="mb-3 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
             <h1 className="text-xl font-semibold">MCL Unified Home</h1>
             <div className="flex w-full min-w-0 flex-col items-stretch gap-2 lg:max-w-[min(100%,52rem)] lg:items-end">
-              {session.mode === "replay" ? (
-                <TransportControls
-                  compact
-                  cursor={session.cursor}
-                  totalTicks={session.ticks.length}
-                  onSeek={session.setCursor}
-                  onStep={(d) =>
-                    session.setCursor((prev) =>
-                      Math.max(0, Math.min(session.ticks.length - 1, prev + d)),
-                    )
-                  }
-                  annotations={scrubberAnnotations}
-                />
-              ) : null}
               <div className="flex flex-wrap items-center justify-end gap-2">
                 <span className="rounded border border-zinc-700 px-2 py-1.5 text-xs text-zinc-400">
                   {status}
@@ -283,6 +274,35 @@ export default function Home() {
               ) : null}
             </aside>
           </div>
+
+          {session.mode === "replay" ? (
+            <div
+              className="fixed bottom-0 left-0 right-0 z-30 border-t border-zinc-700 bg-zinc-950 shadow-[0_-8px_24px_rgba(0,0,0,0.45)]"
+              role="region"
+              aria-label="Replay playback and time series"
+            >
+              <div className="mx-auto max-w-[100vw] px-3 pt-2">
+                <TransportControls
+                  compact
+                  variant="bottomBar"
+                  cursor={session.cursor}
+                  totalTicks={session.ticks.length}
+                  onSeek={session.setCursor}
+                  onStep={(d) =>
+                    session.setCursor((prev) =>
+                      Math.max(0, Math.min(session.ticks.length - 1, prev + d)),
+                    )
+                  }
+                  annotations={scrubberAnnotations}
+                />
+              </div>
+              <TimeSeriesPanel
+                ticks={session.ticks}
+                cursor={session.cursor}
+                onSeek={session.setCursor}
+              />
+            </div>
+          ) : null}
         </>
       ) : null}
     </main>

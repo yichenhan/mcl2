@@ -9,6 +9,8 @@ interface Props {
   onStep: (delta: number) => void;
   /** Horizontal toolbar for header — no section title, tighter padding. */
   compact?: boolean;
+  /** Fixed replay bar at bottom of viewport — full width, flat top border handled by parent. */
+  variant?: "default" | "bottomBar";
   annotations?: ScrubberAnnotation[];
 }
 
@@ -18,6 +20,7 @@ export function TransportControls({
   onSeek,
   onStep,
   compact = false,
+  variant = "default",
   annotations = [],
 }: Props) {
   const buttonRow = (
@@ -132,12 +135,14 @@ export function TransportControls({
     </div>
   );
 
+  const compactClass =
+    variant === "bottomBar"
+      ? "flex w-full min-w-0 flex-col gap-2 border-0 bg-transparent px-0 py-1 sm:flex-row sm:flex-wrap sm:items-center"
+      : "flex w-full min-w-0 max-w-2xl flex-col gap-2 rounded-lg border border-zinc-600 bg-zinc-900/90 px-3 py-2 lg:max-w-none lg:flex-row lg:flex-wrap lg:items-center";
+
   if (compact) {
     return (
-      <section
-        className="flex w-full min-w-0 max-w-2xl flex-col gap-2 rounded-lg border border-zinc-600 bg-zinc-900/90 px-3 py-2 lg:max-w-none lg:flex-row lg:flex-wrap lg:items-center"
-        aria-label="Replay playback"
-      >
+      <section className={compactClass} aria-label="Replay playback">
         <span className="shrink-0 text-xs font-medium text-zinc-400">Replay</span>
         {buttonRow}
         <div className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
