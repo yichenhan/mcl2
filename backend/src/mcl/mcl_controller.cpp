@@ -11,6 +11,7 @@
 #include <iomanip>
 #include <iostream>
 #include <sstream>
+#include <thread>
 #include <utility>
 
 namespace mcl {
@@ -347,41 +348,27 @@ void MCLController::log_tick_result(const MCLTickResult& result, double heading_
 #ifndef NDEBUG_LOG
     if (log_interval_ticks_ <= 1
         || result.tick_count % static_cast<uint64_t>(log_interval_ticks_) == 0) {
-        const std::string full_payload = build_compact_tick_message(result.tick_count, result, heading_deg);
-        if (try_consume_log_budget(full_payload.size())) {
-            if (emit_compact_tick(stdout, full_payload)) {
-                std::fflush(stdout);
-            }
-            return;
-        }
-
-        const std::string summary_payload = build_compact_tick_summary(result.tick_count, result, heading_deg);
-        if (try_consume_log_budget(summary_payload.size()) && emit_compact_tick(stdout, summary_payload)) {
+        const std::string payload = build_compact_tick_message(result.tick_count, result, heading_deg);
+        if (emit_compact_tick(stdout, payload)) {
             std::fflush(stdout);
         }
+        throttle_after_write(payload.size());
     }
 #else
     (void)result; (void)heading_deg;
 #endif
 }
 
-bool MCLController::try_consume_log_budget(size_t bytes) const {
-    if (log_byte_budget_per_sec_ == 0) return true;
-    if (bytes > log_byte_budget_per_sec_) return false;
+void MCLController::throttle_after_write(size_t bytes_written) const {
+    if (log_byte_budget_per_sec_ == 0 || bytes_written == 0) return;
 
-    const auto now = std::chrono::steady_clock::now();
-    if (log_budget_window_start_ == std::chrono::steady_clock::time_point{}
-        || now - log_budget_window_start_ >= std::chrono::seconds(1)) {
-        log_budget_window_start_ = now;
-        log_budget_bytes_used_ = 0;
+    const double sec_per_byte = 1.0 / static_cast<double>(log_byte_budget_per_sec_);
+    const auto delay = std::chrono::duration_cast<std::chrono::microseconds>(
+        std::chrono::duration<double>(sec_per_byte * static_cast<double>(bytes_written)));
+
+    if (delay.count() > 0) {
+        std::this_thread::sleep_for(delay);
     }
-
-    if (log_budget_bytes_used_ + bytes > log_byte_budget_per_sec_) {
-        return false;
-    }
-
-    log_budget_bytes_used_ += bytes;
-    return true;
 }
 
 GateDecision MCLController::fail_decision(const char* reason) const {

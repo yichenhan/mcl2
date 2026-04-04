@@ -289,7 +289,7 @@ private:
                   const MCLTickResult* tick_result = nullptr, double heading_deg = 0.0) const;
     GateDecision fail_decision(const char* reason) const;
     void fill_snapshot(PhaseSnapshot& out) const;
-    bool try_consume_log_budget(size_t bytes) const;
+    void throttle_after_write(size_t bytes_written) const;
 
     MCLEngine engine_;
     GateConfig gate_config_;
@@ -297,8 +297,6 @@ private:
     uint64_t tick_count_ = 0;
     int log_interval_ticks_ = 1;
     size_t log_byte_budget_per_sec_ = 4096;
-    mutable std::chrono::steady_clock::time_point log_budget_window_start_{};
-    mutable size_t log_budget_bytes_used_ = 0;
 };
 
 } // namespace mcl
