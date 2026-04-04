@@ -1,5 +1,7 @@
 #include "mcl/mcl_controller.hpp"
 
+#include <memory>
+
 #include "ray/ray_cast_obstacles.hpp"
 
 #include <algorithm>
@@ -11,7 +13,6 @@
 #include <iomanip>
 #include <iostream>
 #include <sstream>
-#include <thread>
 #include <utility>
 
 namespace mcl {
@@ -135,38 +136,18 @@ std::string build_compact_tick_message(uint64_t tick,
     return oss.str();
 }
 
-std::string build_compact_tick_summary(uint64_t tick,
-                                       const MCLTickResult& r,
-                                       double heading_deg) {
-    const auto T = static_cast<unsigned long long>(tick);
-    std::ostringstream oss;
-    append_compact_int(oss, T, "tc", static_cast<long long>(T));
-    append_compact_float(oss, T, "oh", heading_deg);
-    append_compact_bool(oss, T, "pg", !r.gate.accepted);
-    append_compact_int(oss, T, "vs", r.valid_sensor_count);
-    append_compact_bool(oss, T, "us", r.update_skipped);
-    append_compact_float(oss, T, "cp.x", r.chassis_pose.x);
-    append_compact_float(oss, T, "cp.y", r.chassis_pose.y);
-    append_compact_float(oss, T, "cp.t", r.chassis_pose.theta);
-    append_compact_bool(oss, T, "g.a", r.gate.accepted);
-    if (!r.gate.reason.empty()) {
-        append_compact_line(oss, T, "g.rsn", r.gate.reason);
-    }
-    return oss.str();
-}
-
-bool emit_compact_tick(FILE* stream, const std::string& payload) {
-    if (payload.empty()) return true;
-    return std::fwrite(payload.data(), 1, payload.size(), stream) == payload.size();
-}
-
 } // namespace
 
 MCLController::MCLController(
     const MCLConfig& mcl_config,
     const GateConfig& gate_config,
-    LogFn log_fn)
-    : engine_(mcl_config), gate_config_(gate_config), log_fn_(std::move(log_fn)) {
+    LogFn log_fn,
+    std::shared_ptr<ThrottledWriter> writer)
+    : engine_(mcl_config),
+      gate_config_(gate_config),
+      log_fn_(std::move(log_fn)),
+      // 0 B/s = unlimited (desktop/sim); on hardware pass e.g. std::make_shared<ThrottledWriter>(8192).
+      writer_(writer ? std::move(writer) : std::make_shared<ThrottledWriter>(0)) {
     if (!log_fn_) {
 #ifdef NDEBUG_LOG
         log_fn_ = [](const std::string&) {};
@@ -349,26 +330,13 @@ void MCLController::log_tick_result(const MCLTickResult& result, double heading_
     if (log_interval_ticks_ <= 1
         || result.tick_count % static_cast<uint64_t>(log_interval_ticks_) == 0) {
         const std::string payload = build_compact_tick_message(result.tick_count, result, heading_deg);
-        if (emit_compact_tick(stdout, payload)) {
-            std::fflush(stdout);
+        if (writer_) {
+            writer_->enqueue(payload);
         }
-        throttle_after_write(payload.size());
     }
 #else
     (void)result; (void)heading_deg;
 #endif
-}
-
-void MCLController::throttle_after_write(size_t bytes_written) const {
-    if (log_byte_budget_per_sec_ == 0 || bytes_written == 0) return;
-
-    const double sec_per_byte = 1.0 / static_cast<double>(log_byte_budget_per_sec_);
-    const auto delay = std::chrono::duration_cast<std::chrono::microseconds>(
-        std::chrono::duration<double>(sec_per_byte * static_cast<double>(bytes_written)));
-
-    if (delay.count() > 0) {
-        std::this_thread::sleep_for(delay);
-    }
 }
 
 GateDecision MCLController::fail_decision(const char* reason) const {
