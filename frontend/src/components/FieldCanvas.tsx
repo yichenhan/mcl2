@@ -139,6 +139,7 @@ export function FieldCanvas({
   const flags: OverlayFlags = overlayFlags ?? {
     robotTruth: true,
     rawOdom: true,
+    chassisPose: true,
     mclEstimate: true,
     acceptedEstimate: true,
     r90Circle: true,
@@ -378,7 +379,7 @@ export function FieldCanvas({
       const hasOdomSpike = parsedFailures.some((f) => f.type === "odom_spike");
       const hasHeadingBias = parsedFailures.some((f) => f.type === "heading_bias");
 
-      // MCL estimate arrow (blue) — particle centroid
+      // MCL estimate arrow (blue, dashed outline) — particle centroid
       const mclPose = tick.raw_estimate;
       if (mclPose && flags.mclEstimate) {
         const mclDir = headingToDir(mclPose.theta);
@@ -386,16 +387,18 @@ export function FieldCanvas({
         const mclFront = toCanvas(mclPose.x + mclDir.x * 3, mclPose.y + mclDir.y * 3);
         const mclLeft = toCanvas(mclPose.x - mclDir.x * 2 + mclPerp.x * 2, mclPose.y - mclDir.y * 2 + mclPerp.y * 2);
         const mclRight = toCanvas(mclPose.x - mclDir.x * 2 - mclPerp.x * 2, mclPose.y - mclDir.y * 2 - mclPerp.y * 2);
-        ctx.fillStyle = "#3b82f6";
-        ctx.strokeStyle = "#e2e8f0";
-        ctx.lineWidth = 1.5;
+        ctx.fillStyle = "rgba(59, 130, 246, 0.45)";
         ctx.beginPath();
         ctx.moveTo(mclFront.x, mclFront.y);
         ctx.lineTo(mclLeft.x, mclLeft.y);
         ctx.lineTo(mclRight.x, mclRight.y);
         ctx.closePath();
         ctx.fill();
+        ctx.strokeStyle = "#93c5fd";
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([3, 2]);
         ctx.stroke();
+        ctx.setLineDash([]);
       }
 
       // Use the best available pose for sensor rays and failure overlays
@@ -527,6 +530,25 @@ export function FieldCanvas({
         ctx.moveTo(opFront.x, opFront.y);
         ctx.lineTo(opLeft.x, opLeft.y);
         ctx.lineTo(opRight.x, opRight.y);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      }
+      // Chassis Pose arrow (cyan) — MCL-corrected pose from PoseCorrectionController
+      if (flags.chassisPose && tick.chassis_pose) {
+        const cp = tick.chassis_pose;
+        const cpDir = headingToDir(cp.theta ?? 0);
+        const cpPerp = { x: cpDir.y, y: -cpDir.x };
+        const cpFront = toCanvas(cp.x + cpDir.x * 3, cp.y + cpDir.y * 3);
+        const cpLeft = toCanvas(cp.x - cpDir.x * 2 + cpPerp.x * 2, cp.y - cpDir.y * 2 + cpPerp.y * 2);
+        const cpRight = toCanvas(cp.x - cpDir.x * 2 - cpPerp.x * 2, cp.y - cpDir.y * 2 - cpPerp.y * 2);
+        ctx.fillStyle = "#06b6d4";
+        ctx.strokeStyle = "#cffafe";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(cpFront.x, cpFront.y);
+        ctx.lineTo(cpLeft.x, cpLeft.y);
+        ctx.lineTo(cpRight.x, cpRight.y);
         ctx.closePath();
         ctx.fill();
         ctx.stroke();

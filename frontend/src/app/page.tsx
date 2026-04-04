@@ -45,7 +45,8 @@ export default function Home() {
   });
   const [overlayFlags, setOverlayFlags] = useState<OverlayFlags>({
     robotTruth: true,
-    rawOdom: true,
+    rawOdom: false,
+    chassisPose: true,
     mclEstimate: true,
     acceptedEstimate: true,
     r90Circle: true,
@@ -192,17 +193,12 @@ export default function Home() {
                   compact
                   cursor={session.cursor}
                   totalTicks={session.ticks.length}
-                  isPlaying={session.isPlaying}
-                  speed={session.speed}
-                  onPlay={() => session.setIsPlaying(true)}
-                  onPause={() => session.setIsPlaying(false)}
                   onSeek={session.setCursor}
                   onStep={(d) =>
                     session.setCursor((prev) =>
                       Math.max(0, Math.min(session.ticks.length - 1, prev + d)),
                     )
                   }
-                  onSpeedChange={session.setSpeed}
                   annotations={scrubberAnnotations}
                 />
               ) : null}

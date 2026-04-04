@@ -273,6 +273,9 @@ public:
     void set_log_interval_ticks(int n) { log_interval_ticks_ = n; }
     int log_interval_ticks() const { return log_interval_ticks_; }
 
+    /** Emit compact tick log for an externally-built MCLTickResult (used by LocalizationController). */
+    void log_tick_result(const MCLTickResult& result, double heading_deg) const;
+
 private:
     nlohmann::json snapshot_json() const;
     void emit_log(const char* phase, nlohmann::json extra,

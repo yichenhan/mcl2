@@ -10,13 +10,8 @@ describe("TransportControls annotations", () => {
       <TransportControls
         cursor={0}
         totalTicks={20}
-        isPlaying={false}
-        speed={1}
-        onPlay={() => {}}
-        onPause={() => {}}
         onSeek={onSeek}
         onStep={() => {}}
-        onSpeedChange={() => {}}
         compact
         annotations={[{ tick: 5, type: "error_peak", label: "Peak" }]}
       />,

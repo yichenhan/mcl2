@@ -5,13 +5,8 @@ import type { ScrubberAnnotation } from "@/lib/types";
 interface Props {
   cursor: number;
   totalTicks: number;
-  isPlaying: boolean;
-  speed: number;
-  onPlay: () => void;
-  onPause: () => void;
   onSeek: (tick: number) => void;
   onStep: (delta: number) => void;
-  onSpeedChange: (speed: number) => void;
   /** Horizontal toolbar for header — no section title, tighter padding. */
   compact?: boolean;
   annotations?: ScrubberAnnotation[];
@@ -20,42 +15,37 @@ interface Props {
 export function TransportControls({
   cursor,
   totalTicks,
-  isPlaying,
-  speed,
-  onPlay,
-  onPause,
   onSeek,
   onStep,
-  onSpeedChange,
   compact = false,
   annotations = [],
 }: Props) {
   const buttonRow = (
-    <div className="flex flex-wrap items-center gap-2">
-      <button type="button" className="rounded bg-zinc-800 px-2 py-1 text-xs" onClick={() => onStep(-1)}>
+    <div className="flex items-center gap-1.5">
+      <button
+        type="button"
+        className="flex items-center gap-1 rounded bg-zinc-800 px-2.5 py-1 text-xs hover:bg-zinc-700 disabled:opacity-40"
+        onClick={() => onStep(-1)}
+        disabled={cursor <= 0}
+        aria-label="Previous tick"
+      >
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" aria-hidden>
+          <path d="M8 1.5 3.5 6 8 10.5V1.5Z" />
+        </svg>
         Prev
       </button>
       <button
         type="button"
-        className="rounded bg-zinc-800 px-2 py-1 text-xs"
-        onClick={isPlaying ? onPause : onPlay}
+        className="flex items-center gap-1 rounded bg-zinc-800 px-2.5 py-1 text-xs hover:bg-zinc-700 disabled:opacity-40"
+        onClick={() => onStep(1)}
+        disabled={cursor >= totalTicks - 1}
+        aria-label="Next tick"
       >
-        {isPlaying ? "Pause" : "Play"}
-      </button>
-      <button type="button" className="rounded bg-zinc-800 px-2 py-1 text-xs" onClick={() => onStep(1)}>
         Next
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" aria-hidden>
+          <path d="M4 1.5 8.5 6 4 10.5V1.5Z" />
+        </svg>
       </button>
-      <select
-        className="rounded border border-zinc-600 bg-zinc-900 px-2 py-1 text-xs"
-        value={speed}
-        onChange={(e) => onSpeedChange(Number(e.target.value))}
-      >
-        {[0.5, 1, 2, 4].map((s) => (
-          <option key={s} value={s}>
-            {s}x
-          </option>
-        ))}
-      </select>
     </div>
   );
 

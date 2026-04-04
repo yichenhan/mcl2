@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <cstdarg>
 #include <cstdio>
 #include <ctime>
 #include <iomanip>
@@ -53,6 +54,7 @@ void emit_compact_tick(uint64_t tick,
         std::vprintf(fmt, args);
         va_end(args);
         std::putchar('\n');
+        std::fflush(stdout);
     };
     auto pb = [&](const char* key, bool v) { pf(key, "%d", v ? 1 : 0); };
 
@@ -114,8 +116,6 @@ void emit_compact_tick(uint64_t tick,
     ps("pp", r.post_predict);
     ps("pu", r.post_update);
     ps("ps", r.post_resample);
-
-    std::fflush(stdout);
 }
 
 } // namespace
@@ -299,6 +299,17 @@ void MCLController::emit_log(const char* phase, nlohmann::json extra,
         (log_interval_ticks_ <= 1 || tick_count_ % static_cast<uint64_t>(log_interval_ticks_) == 0)) {
         emit_compact_tick(tick_count_, *tick_result, heading_deg);
     }
+#endif
+}
+
+void MCLController::log_tick_result(const MCLTickResult& result, double heading_deg) const {
+#ifndef NDEBUG_LOG
+    if (log_interval_ticks_ <= 1
+        || result.tick_count % static_cast<uint64_t>(log_interval_ticks_) == 0) {
+        emit_compact_tick(result.tick_count, result, heading_deg);
+    }
+#else
+    (void)result; (void)heading_deg;
 #endif
 }
 

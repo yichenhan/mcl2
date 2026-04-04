@@ -3,7 +3,8 @@ import type { OverlayFlags, SessionMode } from "@/lib/types";
 export function getDefaultOverlayFlags(): OverlayFlags {
   return {
     robotTruth: false,
-    rawOdom: true,
+    rawOdom: false,
+    chassisPose: true,
     mclEstimate: true,
     acceptedEstimate: true,
     r90Circle: true,

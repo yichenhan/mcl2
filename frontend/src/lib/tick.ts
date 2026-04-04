@@ -44,6 +44,12 @@ export function toTickState(raw: unknown): TickState {
     ? r.raw_odom
     : undefined;
 
+  const chassisPose = r.chassis_pose
+    && typeof r.chassis_pose.x === "number"
+    && typeof r.chassis_pose.y === "number"
+    ? r.chassis_pose
+    : undefined;
+
   return {
     tick: r.tick ?? (typeof legacy.tick_count === "number" ? legacy.tick_count : 0),
     timestamp_iso: r.timestamp_iso ?? "",
@@ -63,6 +69,7 @@ export function toTickState(raw: unknown): TickState {
     raw_odom: rawOdom,
     raw_estimate: rawEstimate,
     accepted_estimate: r.accepted_estimate,
+    chassis_pose: chassisPose,
     gate_decision: gateDecision,
     cluster_stats: cs,
     mcl_predicted_readings: predictedReadings,

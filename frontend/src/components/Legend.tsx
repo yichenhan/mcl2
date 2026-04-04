@@ -14,6 +14,7 @@ interface Props {
 const LABELS: Record<keyof OverlayFlags, string> = {
   robotTruth: "Robot True Location",
   rawOdom: "Raw Odom (uncorrected)",
+  chassisPose: "Chassis Pose",
   mclEstimate: "MCL Estimate",
   acceptedEstimate: "MCL Accepted Estimate",
   r90Circle: "R90 Circle",
@@ -46,6 +47,7 @@ function HeatmapLegendIcon() {
 /** Mini preview matching `FieldCanvas` stroke/fill styles. */
 function OverlayLegendIcon({ overlayKey }: { overlayKey: keyof OverlayFlags }) {
   const common = "shrink-0 overflow-visible";
+  const uid = useId().replace(/:/g, "_");
   switch (overlayKey) {
     case "robotTruth":
       return (
@@ -59,12 +61,26 @@ function OverlayLegendIcon({ overlayKey }: { overlayKey: keyof OverlayFlags }) {
           <polygon points="18,1 7,17 29,17" fill="#10b981" stroke="#d1fae5" strokeWidth="1" />
         </svg>
       );
-    case "mclEstimate":
+    case "chassisPose":
       return (
         <svg className={common} width="36" height="18" viewBox="0 0 36 18" aria-hidden>
-          <polygon points="18,1 7,17 29,17" fill="#3b82f6" stroke="#e2e8f0" strokeWidth="1" />
+          <polygon points="18,1 7,17 29,17" fill="#06b6d4" stroke="#cffafe" strokeWidth="1.5" />
         </svg>
       );
+    case "mclEstimate": {
+      const stripId = `legend-mcl-stripe-${uid}`;
+      return (
+        <svg className={common} width="36" height="18" viewBox="0 0 36 18" aria-hidden>
+          <defs>
+            <pattern id={stripId} width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+              <rect width="2" height="4" fill="#3b82f6" />
+              <rect x="2" width="2" height="4" fill="#1e3a5f" />
+            </pattern>
+          </defs>
+          <polygon points="18,1 7,17 29,17" fill={`url(#${stripId})`} stroke="#93c5fd" strokeWidth="1.5" />
+        </svg>
+      );
+    }
     case "acceptedEstimate":
       return (
         <svg className={common} width="36" height="18" viewBox="0 0 36 18" aria-hidden>

@@ -97,6 +97,35 @@ export function MetricsPanel({ tick }: Props) {
       {!isTickState(tick) && gateReason ? (
         <div className="mt-2 text-xs text-zinc-300">Reason: {gateReason}</div>
       ) : null}
+
+      {/* Position debug section */}
+      {isTickState(tick) ? (
+        <div className="mt-3 border-t border-zinc-800 pt-2 text-xs">
+          <div className="mb-1 font-semibold text-zinc-300">Position (inches)</div>
+          <div className="grid grid-cols-4 gap-y-1 text-zinc-400">
+            <span />
+            <span className="text-center">X</span>
+            <span className="text-center">Y</span>
+            <span className="text-center">θ</span>
+
+            <span className="text-cyan-400">Chassis</span>
+            <span className="text-center text-zinc-200">{tick.chassis_pose ? formatNumber(tick.chassis_pose.x) : "-"}</span>
+            <span className="text-center text-zinc-200">{tick.chassis_pose ? formatNumber(tick.chassis_pose.y) : "-"}</span>
+            <span className="text-center text-zinc-200">{tick.chassis_pose ? formatNumber(tick.chassis_pose.theta) : "-"}</span>
+
+            <span className="text-blue-400">MCL</span>
+            <span className="text-center text-zinc-200">{tick.raw_estimate ? formatNumber(tick.raw_estimate.x) : "-"}</span>
+            <span className="text-center text-zinc-200">{tick.raw_estimate ? formatNumber(tick.raw_estimate.y) : "-"}</span>
+            <span className="text-center text-zinc-200">{tick.raw_estimate ? formatNumber(tick.raw_estimate.theta) : "-"}</span>
+
+            <span className="text-emerald-400">Raw Odom</span>
+            <span className="text-center text-zinc-200">{tick.raw_odom ? formatNumber(tick.raw_odom.x) : "-"}</span>
+            <span className="text-center text-zinc-200">{tick.raw_odom ? formatNumber(tick.raw_odom.y) : "-"}</span>
+            <span className="text-center text-zinc-200">{tick.raw_odom ? formatNumber(tick.raw_odom.theta) : "-"}</span>
+          </div>
+        </div>
+      ) : null}
+
       {!isTickState(tick) && tick.observed_readings && tick.mcl_sensor_residuals ? (
         <div className="mt-3 border-t border-zinc-800 pt-2 text-xs">
           <div className="mb-1 font-semibold text-zinc-300">Sensor Diagnostics</div>

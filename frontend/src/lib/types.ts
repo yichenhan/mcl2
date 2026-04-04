@@ -290,6 +290,7 @@ export interface FailureConfig {
 export interface OverlayFlags {
   robotTruth: boolean;
   rawOdom: boolean;
+  chassisPose: boolean;
   mclEstimate: boolean;
   acceptedEstimate: boolean;
   r90Circle: boolean;

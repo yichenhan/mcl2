@@ -102,6 +102,7 @@ private:
     Pose prev_estimate_{};
     Pose prev_odom_pose_{};
     bool has_prev_odom_ = false;
+    uint64_t tick_count_ = 0;
     std::unique_ptr<MCLController> mcl_;
 };
 

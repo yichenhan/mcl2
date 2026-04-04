@@ -174,6 +174,7 @@ int LocalizationController::count_valid(const std::array<double, 4>& readings) c
 
 TickOutput LocalizationController::tick_mcl(const TickInput& input) {
     TickOutput out;
+    out.tick_count = ++tick_count_;
     out.timestamp_iso = iso_timestamp_utc();
     out.algorithm_used = LocAlgorithm::MCL;
 
@@ -263,6 +264,8 @@ TickOutput LocalizationController::tick_mcl(const TickInput& input) {
         accepted_pose_ = raw_estimate_;
     }
     out.accepted_pose = accepted_pose_;
+
+    mcl_->log_tick_result(out, wrap_heading(input.imu_heading_deg));
     return out;
 }
 
