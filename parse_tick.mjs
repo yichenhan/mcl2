@@ -90,17 +90,21 @@ function expandPackedValue(obj, key, rawVal) {
     const msrRt = (parts[2] ?? "0/0").split("/");
     const r90Str = (parts[3] ?? "r90=0").replace("r90=", "");
     const jStr = (parts[4] ?? "j=0").replace("j=", "");
+    const cdStr = (parts[5] ?? "cd=0").replace("cd=", "");
     setNested(obj, "gate.accepted", accepted ? "true" : "false");
     setNested(obj, "gate.reason", reason);
     setNested(obj, "gate.max_sensor_residual_in", msrRt[0] ?? "0");
     setNested(obj, "gate.residual_threshold_in", msrRt[1] ?? "0");
     setNested(obj, "gate.radius_90_in", r90Str);
     setNested(obj, "gate.jump_in", jStr);
+    setNested(obj, "correction_distance_in", cdStr);
     setNested(obj, "gate.failed_r90", reason.includes("r90") ? "true" : "false");
     setNested(obj, "gate.failed_residual",
       reason.includes("residual") || reason.includes("insufficient") ? "true" : "false");
     setNested(obj, "gate.failed_centroid_jump",
-      reason.includes("centroid") || reason.includes("jump") ? "true" : "false");
+      reason.includes("centroid") ? "true" : "false");
+    setNested(obj, "gate.failed_max_correction",
+      reason.includes("max correction") ? "true" : "false");
     setNested(obj, "gate.failed_passability", reason.includes("passability") ? "true" : "false");
     setNested(obj, "pose_gated", accepted ? "false" : "true");
     setNested(obj, "post_resample.radius_90", r90Str);
