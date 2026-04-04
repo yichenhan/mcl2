@@ -55,7 +55,7 @@ struct ControllerConfig {
     int min_sensors_for_update = 2;
     int32_t invalid_reading_mm = 9999;
     double tick_dt_sec = 0.05;
-    int log_interval_ticks = 4;
+    int log_interval_ticks = 1;
 
     // Legacy correction thresholds for application.
     double min_correction_delta_in = 0.5;

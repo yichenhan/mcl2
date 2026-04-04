@@ -27,7 +27,7 @@ struct MCLConfig {
     double outlier_far_cap_fraction = 0.15;
     double random_injection = 0.05;
     double resample_threshold = 0.5;
-    double roughening_sigma = 0.3;  // post-resample jitter for convergence and particle diversity
+    double roughening_sigma = 1.0;  // post-resample jitter for convergence and particle diversity
     // Force resampling for a short window after initialize_uniform() to
     // improve global relocalization and re-init convergence.
     int bootstrap_recovery_ticks = 12;

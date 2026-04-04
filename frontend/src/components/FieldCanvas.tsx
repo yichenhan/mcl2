@@ -378,21 +378,31 @@ export function FieldCanvas({
       const hasOdomSpike = parsedFailures.some((f) => f.type === "odom_spike");
       const hasHeadingBias = parsedFailures.some((f) => f.type === "heading_bias");
 
-      // Primary robot icon: chassis_pose (MCL-corrected, what robot believes)
-      // Falls back to accepted_estimate, then raw_estimate, then ground_truth for old replays.
-      const robotPose = tick.chassis_pose
-        ?? (tick.accepted_estimate
-          ? { x: tick.accepted_estimate.x, y: tick.accepted_estimate.y, theta: tick.observed_heading }
-          : (tick.raw_estimate
-            ? { x: tick.raw_estimate.x, y: tick.raw_estimate.y, theta: tick.raw_estimate.theta }
-            : (hasGt
-              ? { x: gt.x, y: gt.y, theta: gt.heading_deg }
-              : { x: 0, y: 0, theta: 0 })));
-      const robotDir = headingToDir(robotPose.theta);
-      const robotPerp = { x: robotDir.y, y: -robotDir.x };
-      const robotFront = toCanvas(robotPose.x + robotDir.x * 3, robotPose.y + robotDir.y * 3);
-      const robotLeft = toCanvas(robotPose.x - robotDir.x * 2 + robotPerp.x * 2, robotPose.y - robotDir.y * 2 + robotPerp.y * 2);
-      const robotRight = toCanvas(robotPose.x - robotDir.x * 2 - robotPerp.x * 2, robotPose.y - robotDir.y * 2 - robotPerp.y * 2);
+      // MCL estimate arrow (blue) — particle centroid
+      const mclPose = tick.raw_estimate;
+      if (mclPose && flags.mclEstimate) {
+        const mclDir = headingToDir(mclPose.theta);
+        const mclPerp = { x: mclDir.y, y: -mclDir.x };
+        const mclFront = toCanvas(mclPose.x + mclDir.x * 3, mclPose.y + mclDir.y * 3);
+        const mclLeft = toCanvas(mclPose.x - mclDir.x * 2 + mclPerp.x * 2, mclPose.y - mclDir.y * 2 + mclPerp.y * 2);
+        const mclRight = toCanvas(mclPose.x - mclDir.x * 2 - mclPerp.x * 2, mclPose.y - mclDir.y * 2 - mclPerp.y * 2);
+        ctx.fillStyle = "#3b82f6";
+        ctx.strokeStyle = "#e2e8f0";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(mclFront.x, mclFront.y);
+        ctx.lineTo(mclLeft.x, mclLeft.y);
+        ctx.lineTo(mclRight.x, mclRight.y);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      }
+
+      // Use the best available pose for sensor rays and failure overlays
+      const robotPose = mclPose
+        ?? (tick.odom_pose && typeof tick.odom_pose.x === "number"
+          ? { x: tick.odom_pose.x, y: tick.odom_pose.y, theta: tick.odom_pose.theta ?? 0 }
+          : { x: 0, y: 0, theta: 0 });
 
       // Ground truth overlay (debug -- shown when robotTruth flag is ON and data exists)
       if (flags.robotTruth && hasGt) {
@@ -412,28 +422,21 @@ export function FieldCanvas({
         ctx.globalAlpha = 1.0;
       }
 
-      // Draw chassis_pose as the primary robot icon (blue/white)
-      ctx.fillStyle = hasKidnap ? "#f87171" : "#3b82f6";
-      ctx.strokeStyle = "#e2e8f0";
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.moveTo(robotFront.x, robotFront.y);
-      ctx.lineTo(robotLeft.x, robotLeft.y);
-      ctx.lineTo(robotRight.x, robotRight.y);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-
       const robot = toCanvas(robotPose.x, robotPose.y);
 
       if (hasOdomSpike) {
+        const dir = headingToDir(robotPose.theta);
+        const perp = { x: dir.y, y: -dir.x };
+        const rf = toCanvas(robotPose.x + dir.x * 3, robotPose.y + dir.y * 3);
+        const rl = toCanvas(robotPose.x - dir.x * 2 + perp.x * 2, robotPose.y - dir.y * 2 + perp.y * 2);
+        const rr = toCanvas(robotPose.x - dir.x * 2 - perp.x * 2, robotPose.y - dir.y * 2 - perp.y * 2);
         ctx.fillStyle = "rgba(234, 179, 8, 0.25)";
         for (let i = 0; i < 3; i++) {
           const jitter = i - 1;
           ctx.beginPath();
-          ctx.moveTo(robotFront.x + jitter, robotFront.y + jitter);
-          ctx.lineTo(robotLeft.x + jitter, robotLeft.y + jitter);
-          ctx.lineTo(robotRight.x + jitter, robotRight.y + jitter);
+          ctx.moveTo(rf.x + jitter, rf.y + jitter);
+          ctx.lineTo(rl.x + jitter, rl.y + jitter);
+          ctx.lineTo(rr.x + jitter, rr.y + jitter);
           ctx.closePath();
           ctx.fill();
         }
@@ -509,20 +512,23 @@ export function FieldCanvas({
       });
       ctx.setLineDash([]);
 
+      // Chassis Pose arrow (green) — raw getPose(), no corrections
       if (flags.odomPose && tick.odom_pose) {
-        const od = toCanvas(tick.odom_pose.x, tick.odom_pose.y);
-        ctx.strokeStyle = "#10b981";
-        ctx.lineWidth = 2;
+        const op = tick.odom_pose;
+        const opDir = headingToDir(op.theta ?? 0);
+        const opPerp = { x: opDir.y, y: -opDir.x };
+        const opFront = toCanvas(op.x + opDir.x * 3, op.y + opDir.y * 3);
+        const opLeft = toCanvas(op.x - opDir.x * 2 + opPerp.x * 2, op.y - opDir.y * 2 + opPerp.y * 2);
+        const opRight = toCanvas(op.x - opDir.x * 2 - opPerp.x * 2, op.y - opDir.y * 2 - opPerp.y * 2);
+        ctx.fillStyle = "#10b981";
+        ctx.strokeStyle = "#d1fae5";
+        ctx.lineWidth = 1.5;
         ctx.beginPath();
-        ctx.arc(od.x, od.y, 5, 0, Math.PI * 2);
-        ctx.stroke();
-      }
-      if (flags.mclEstimate && tick.raw_estimate) {
-        const raw = toCanvas(tick.raw_estimate.x, tick.raw_estimate.y);
-        ctx.strokeStyle = "#f97316";
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(raw.x, raw.y, 5, 0, Math.PI * 2);
+        ctx.moveTo(opFront.x, opFront.y);
+        ctx.lineTo(opLeft.x, opLeft.y);
+        ctx.lineTo(opRight.x, opRight.y);
+        ctx.closePath();
+        ctx.fill();
         ctx.stroke();
       }
       if (flags.acceptedEstimate && tick.accepted_estimate) {

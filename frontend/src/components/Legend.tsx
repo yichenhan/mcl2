@@ -13,17 +13,17 @@ interface Props {
 
 const LABELS: Record<keyof OverlayFlags, string> = {
   robotTruth: "Robot True Location",
-  odomPose: "Odom Pose",
-  mclEstimate: "MCL Raw Estimate",
+  odomPose: "Chassis Pose",
+  mclEstimate: "MCL Estimate",
   acceptedEstimate: "MCL Accepted Estimate",
   r90Circle: "R90 Circle",
   particles: "Particles",
   heatmap: "Heatmap",
   sensorReadings: "Sensor Readings",
   sensorResiduals: "Sensor Residuals",
-  diffMclPose: "MCL vs Pose",
+  diffMclPose: "MCL vs Chassis",
   diffMclTruth: "MCL vs Truth",
-  diffPoseTruth: "Pose vs Truth",
+  diffPoseTruth: "Chassis vs Truth",
 };
 
 function HeatmapLegendIcon() {
@@ -56,13 +56,13 @@ function OverlayLegendIcon({ overlayKey }: { overlayKey: keyof OverlayFlags }) {
     case "odomPose":
       return (
         <svg className={common} width="36" height="18" viewBox="0 0 36 18" aria-hidden>
-          <circle cx="18" cy="9" r="5" fill="none" stroke="#10b981" strokeWidth="2" />
+          <polygon points="18,1 7,17 29,17" fill="#10b981" stroke="#d1fae5" strokeWidth="1" />
         </svg>
       );
     case "mclEstimate":
       return (
         <svg className={common} width="36" height="18" viewBox="0 0 36 18" aria-hidden>
-          <circle cx="18" cy="9" r="5" fill="none" stroke="#f97316" strokeWidth="2" />
+          <polygon points="18,1 7,17 29,17" fill="#3b82f6" stroke="#e2e8f0" strokeWidth="1" />
         </svg>
       );
     case "acceptedEstimate":
