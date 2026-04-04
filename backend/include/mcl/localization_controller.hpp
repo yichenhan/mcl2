@@ -60,6 +60,7 @@ struct ControllerConfig {
     // Legacy correction thresholds for application.
     double min_correction_delta_in = 0.5;
     double min_odom_raywall_error_in = 2.0;
+    double max_correction_in = 12.0;
 
     Pose initial_pose{};
 };

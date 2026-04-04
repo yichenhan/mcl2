@@ -244,10 +244,13 @@ void MCLController::log_tick_result(const MCLTickResult& result, double heading_
                     r.raw_estimate.x, r.raw_estimate.y, r.raw_estimate.theta);
         std::printf("[T=%llu||cp]=(%.2f,%.2f,%.1f)\n", T,
                     r.chassis_pose.x, r.chassis_pose.y, r.chassis_pose.theta);
-        std::printf("[T=%llu||g]=%d|%s|%.2f/%.2f|r90=%.2f|j=%.2f\n", T,
+        const double cd = std::sqrt(
+            (r.raw_estimate.x - r.chassis_pose.x) * (r.raw_estimate.x - r.chassis_pose.x) +
+            (r.raw_estimate.y - r.chassis_pose.y) * (r.raw_estimate.y - r.chassis_pose.y));
+        std::printf("[T=%llu||g]=%d|%s|%.2f/%.2f|r90=%.2f|j=%.2f|cd=%.2f\n", T,
                     g.accepted ? 1 : 0, g.reason.c_str(),
                     g.max_sensor_residual_in, g.residual_threshold_in,
-                    g.radius_90_in, g.jump_in);
+                    g.radius_90_in, g.jump_in, cd);
         std::fflush(stdout);
     }
 #else

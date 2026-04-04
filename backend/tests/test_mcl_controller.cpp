@@ -108,7 +108,9 @@ TEST_CASE("MCLController gate rejects high per-sensor residual") {
     sim::Field field;
     mcl::Estimate prev{0.0f, 0.0f};
     std::array<double, 4> readings{0.0, -1.0, -1.0, -1.0}; // intentionally impossible
-    const auto d = c.gate_estimate(field, readings, 0.0, prev, 0.05);
+    mcl::GateEnables enables;
+    enables.residual = true;
+    const auto d = c.gate_estimate(field, readings, 0.0, prev, 0.05, enables);
     CHECK_FALSE(d.accepted);
     CHECK(d.failed_residual);
 }

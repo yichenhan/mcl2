@@ -31,7 +31,7 @@ struct GateEnables {
     bool centroid_jump = true;
     bool r90 = true;
     bool passability = true;
-    bool residual = true;
+    bool residual = false;
 };
 
 struct GateDecision {

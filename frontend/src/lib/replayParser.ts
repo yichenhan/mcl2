@@ -161,6 +161,8 @@ function expandPackedValue(
       reason.includes("centroid") || reason.includes("jump") ? "true" : "false");
     setNestedValue(obj, "gate.failed_passability", reason.includes("passability") ? "true" : "false");
     setNestedValue(obj, "pose_gated", accepted ? "false" : "true");
+    setNestedValue(obj, "post_resample.radius_90", r90Str);
+    setNestedValue(obj, "cluster_stats.radius_90", r90Str);
     return true;
   }
   return false;

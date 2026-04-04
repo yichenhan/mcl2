@@ -260,6 +260,11 @@ TickOutput LocalizationController::tick_mcl(const TickInput& input) {
         config_.gate_enables);
 
     out.correction_distance_in = euclidean(raw_estimate_.x, raw_estimate_.y, accepted_pose_.x, accepted_pose_.y);
+    if (out.gate.accepted && config_.max_correction_in > 0
+        && out.correction_distance_in > config_.max_correction_in) {
+        out.gate.accepted = false;
+        out.gate.reason = "max correction gate";
+    }
     out.correction_applied = out.gate.accepted;
     if (out.gate.accepted) {
         accepted_pose_ = raw_estimate_;
