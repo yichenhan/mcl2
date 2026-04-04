@@ -119,6 +119,53 @@ function setNestedValue(obj: Record<string, unknown>, path: string, raw: string)
   }
 }
 
+function expandPackedValue(
+  obj: Record<string, unknown>,
+  key: string,
+  rawVal: string,
+): boolean {
+  if (key === "or") {
+    const inner = rawVal.replace(/^\[|\]$/g, "");
+    const parts = inner.split(",");
+    for (let i = 0; i < 4; i++) {
+      setNestedValue(obj, `observed_readings.${i}`, parts[i] ?? "-1");
+    }
+    return true;
+  }
+  if (key === "op" || key === "re" || key === "cp") {
+    const prefix = key === "op" ? "raw_odom" : key === "re" ? "raw_estimate" : "chassis_pose";
+    const inner = rawVal.replace(/^\(|\)$/g, "");
+    const parts = inner.split(",");
+    setNestedValue(obj, `${prefix}.x`, parts[0] ?? "0");
+    setNestedValue(obj, `${prefix}.y`, parts[1] ?? "0");
+    setNestedValue(obj, `${prefix}.theta`, parts[2] ?? "0");
+    return true;
+  }
+  if (key === "g") {
+    const parts = rawVal.split("|");
+    const accepted = parts[0] === "1";
+    const reason = parts[1] ?? "";
+    const msrRt = (parts[2] ?? "0/0").split("/");
+    const r90Str = (parts[3] ?? "r90=0").replace("r90=", "");
+    const jStr = (parts[4] ?? "j=0").replace("j=", "");
+    setNestedValue(obj, "gate.accepted", accepted ? "true" : "false");
+    setNestedValue(obj, "gate.reason", reason);
+    setNestedValue(obj, "gate.max_sensor_residual_in", msrRt[0] ?? "0");
+    setNestedValue(obj, "gate.residual_threshold_in", msrRt[1] ?? "0");
+    setNestedValue(obj, "gate.radius_90_in", r90Str);
+    setNestedValue(obj, "gate.jump_in", jStr);
+    setNestedValue(obj, "gate.failed_r90", reason.includes("r90") ? "true" : "false");
+    setNestedValue(obj, "gate.failed_residual",
+      reason.includes("residual") || reason.includes("insufficient") ? "true" : "false");
+    setNestedValue(obj, "gate.failed_centroid_jump",
+      reason.includes("centroid") || reason.includes("jump") ? "true" : "false");
+    setNestedValue(obj, "gate.failed_passability", reason.includes("passability") ? "true" : "false");
+    setNestedValue(obj, "pose_gated", accepted ? "false" : "true");
+    return true;
+  }
+  return false;
+}
+
 function parseTickKVLines(text: string): unknown[] {
   const tickMap = new Map<number, Record<string, unknown>>();
   for (const line of text.split("\n")) {
@@ -134,13 +181,16 @@ function parseTickKVLines(text: string): unknown[] {
     if (compact) {
       const tickNum = Number(compact[1]);
       const shortKey = compact[2].trim();
-      const fullKey = COMPACT_KEY_MAP[shortKey] ?? shortKey;
-      let rawVal = compact[3];
-      if (COMPACT_BOOL_PATHS.has(fullKey)) {
-        rawVal = rawVal === "1" ? "true" : "false";
-      }
+      const rawVal = compact[3];
       if (!tickMap.has(tickNum)) tickMap.set(tickNum, { tick_count: tickNum });
-      setNestedValue(tickMap.get(tickNum)!, fullKey, rawVal);
+      const obj = tickMap.get(tickNum)!;
+      if (expandPackedValue(obj, shortKey, rawVal)) continue;
+      const fullKey = COMPACT_KEY_MAP[shortKey] ?? shortKey;
+      let val = rawVal;
+      if (COMPACT_BOOL_PATHS.has(fullKey)) {
+        val = val === "1" ? "true" : "false";
+      }
+      setNestedValue(obj, fullKey, val);
     }
   }
   return [...tickMap.entries()].sort((a, b) => a[0] - b[0]).map(([, obj]) => obj);

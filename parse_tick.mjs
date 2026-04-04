@@ -67,6 +67,47 @@ function setNested(obj, path, raw) {
   else cur[leaf] = value;
 }
 
+function expandPackedValue(obj, key, rawVal) {
+  if (key === "or") {
+    const inner = rawVal.replace(/^\[|\]$/g, "");
+    const parts = inner.split(",");
+    for (let i = 0; i < 4; i++) setNested(obj, `observed_readings.${i}`, parts[i] ?? "-1");
+    return true;
+  }
+  if (key === "op" || key === "re" || key === "cp") {
+    const prefix = key === "op" ? "odom_pose" : key === "re" ? "raw_estimate" : "chassis_pose";
+    const inner = rawVal.replace(/^\(|\)$/g, "");
+    const parts = inner.split(",");
+    setNested(obj, `${prefix}.x`, parts[0] ?? "0");
+    setNested(obj, `${prefix}.y`, parts[1] ?? "0");
+    setNested(obj, `${prefix}.theta`, parts[2] ?? "0");
+    return true;
+  }
+  if (key === "g") {
+    const parts = rawVal.split("|");
+    const accepted = parts[0] === "1";
+    const reason = parts[1] ?? "";
+    const msrRt = (parts[2] ?? "0/0").split("/");
+    const r90Str = (parts[3] ?? "r90=0").replace("r90=", "");
+    const jStr = (parts[4] ?? "j=0").replace("j=", "");
+    setNested(obj, "gate.accepted", accepted ? "true" : "false");
+    setNested(obj, "gate.reason", reason);
+    setNested(obj, "gate.max_sensor_residual_in", msrRt[0] ?? "0");
+    setNested(obj, "gate.residual_threshold_in", msrRt[1] ?? "0");
+    setNested(obj, "gate.radius_90_in", r90Str);
+    setNested(obj, "gate.jump_in", jStr);
+    setNested(obj, "gate.failed_r90", reason.includes("r90") ? "true" : "false");
+    setNested(obj, "gate.failed_residual",
+      reason.includes("residual") || reason.includes("insufficient") ? "true" : "false");
+    setNested(obj, "gate.failed_centroid_jump",
+      reason.includes("centroid") || reason.includes("jump") ? "true" : "false");
+    setNested(obj, "gate.failed_passability", reason.includes("passability") ? "true" : "false");
+    setNested(obj, "pose_gated", accepted ? "false" : "true");
+    return true;
+  }
+  return false;
+}
+
 function parseTicks(text) {
   const tickMap = new Map();
   for (const line of text.split("\n")) {
@@ -77,11 +118,13 @@ function parseTicks(text) {
     if (compact) {
       tickNum = Number(compact[1]);
       shortKey = compact[2].trim();
-      const fullKey = COMPACT_KEY_MAP[shortKey] ?? shortKey;
       rawVal = compact[3];
-      if (BOOL_PATHS.has(fullKey)) rawVal = rawVal === "1" ? "true" : "false";
       if (!tickMap.has(tickNum)) tickMap.set(tickNum, { tick_count: tickNum });
-      setNested(tickMap.get(tickNum), fullKey, rawVal);
+      const obj = tickMap.get(tickNum);
+      if (expandPackedValue(obj, shortKey, rawVal)) continue;
+      const fullKey = COMPACT_KEY_MAP[shortKey] ?? shortKey;
+      if (BOOL_PATHS.has(fullKey)) rawVal = rawVal === "1" ? "true" : "false";
+      setNested(obj, fullKey, rawVal);
       continue;
     }
     const old = TICK_KV_RE.exec(trimmed);
