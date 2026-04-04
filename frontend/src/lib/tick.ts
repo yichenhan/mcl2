@@ -6,7 +6,7 @@ function num(v: unknown, fallback = 0): number {
 
 function snapshotFromCluster(cs: MCLClusterStats, nEff: number): MCLSnapshot {
   return {
-    estimate: { x: cs.centroid.x, y: cs.centroid.y },
+    estimate: { x: cs.centroid?.x ?? 0, y: cs.centroid?.y ?? 0 },
     n_eff: nEff,
     spread: cs.spread,
     radius_90: cs.radius_90,
@@ -36,7 +36,7 @@ export function toTickState(raw: unknown): TickState {
     postResample.spread = cs.spread;
   }
 
-  const rawEstimate = r.raw_estimate ?? (cs ? { x: cs.centroid.x, y: cs.centroid.y, theta: r.observed_heading ?? 0 } : undefined);
+  const rawEstimate = r.raw_estimate ?? (cs?.centroid ? { x: cs.centroid.x, y: cs.centroid.y, theta: r.observed_heading ?? 0 } : undefined);
 
   const odomPose = r.odom_pose
     && typeof r.odom_pose.x === "number"
