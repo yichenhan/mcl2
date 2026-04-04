@@ -274,7 +274,8 @@ public:
 
 private:
     nlohmann::json snapshot_json() const;
-    void emit_log(const char* phase, nlohmann::json extra) const;
+    void emit_log(const char* phase, nlohmann::json extra,
+                  const MCLTickResult* tick_result = nullptr, double heading_deg = 0.0) const;
     GateDecision fail_decision(const char* reason) const;
     void fill_snapshot(PhaseSnapshot& out) const;
 

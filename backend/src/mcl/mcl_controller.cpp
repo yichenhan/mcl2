@@ -3,8 +3,11 @@
 #include "ray/ray_cast_obstacles.hpp"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
+#include <ctime>
+#include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <utility>
@@ -20,34 +23,99 @@ nlohmann::json estimate_to_json(const Estimate& est) {
     };
 }
 
-void remove_particles_fields(nlohmann::json& value) {
-    if (value.is_object()) {
-        value.erase("particles");
-        for (auto& item : value.items()) {
-            remove_particles_fields(item.value());
-        }
-        return;
-    }
-    if (value.is_array()) {
-        for (auto& item : value) {
-            remove_particles_fields(item);
-        }
-    }
+std::string iso_timestamp_utc() {
+    const auto now = std::chrono::system_clock::now();
+    const auto secs = std::chrono::time_point_cast<std::chrono::seconds>(now);
+    const auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now - secs).count();
+    const std::time_t t = std::chrono::system_clock::to_time_t(now);
+    std::tm tm;
+#if defined(_WIN32)
+    gmtime_s(&tm, &t);
+#else
+    gmtime_r(&t, &tm);
+#endif
+    std::ostringstream oss;
+    oss << std::put_time(&tm, "%Y-%m-%dT%H:%M:%S")
+        << '.' << std::setw(3) << std::setfill('0') << ms << 'Z';
+    return oss.str();
 }
 
-void flatten_json(const nlohmann::json& value, const std::string& prefix,
-                  std::vector<std::pair<std::string, std::string>>& out) {
-    if (value.is_object()) {
-        for (const auto& [k, v] : value.items()) {
-            flatten_json(v, prefix.empty() ? k : prefix + "." + k, out);
-        }
-    } else if (value.is_array()) {
-        for (size_t i = 0; i < value.size(); ++i) {
-            flatten_json(value[i], prefix + "." + std::to_string(i), out);
-        }
-    } else {
-        out.emplace_back(prefix, value.dump());
-    }
+// Compact tick printf: [T=N||short_key]=value, ~18 chars/line avg.
+// Frontend expands short keys back to full TickState paths.
+void emit_compact_tick(uint64_t tick,
+                       const MCLTickResult& r,
+                       double heading_deg) {
+    const auto T = static_cast<unsigned long long>(tick);
+    auto pf = [&](const char* key, const char* fmt, ...) __attribute__((format(printf, 3, 4))) {
+        std::printf("[T=%llu||%s]=", T, key);
+        va_list args;
+        va_start(args, fmt);
+        std::vprintf(fmt, args);
+        va_end(args);
+        std::putchar('\n');
+    };
+    auto pb = [&](const char* key, bool v) { pf(key, "%d", v ? 1 : 0); };
+
+    pf("tc", "%llu", T);
+    pf("oh", "%.1f", heading_deg);
+    pb("pg", !r.gate.accepted);
+    pf("ts", "%s", iso_timestamp_utc().c_str());
+    pf("vs", "%d", r.valid_sensor_count);
+    pb("us", r.update_skipped);
+    pf("ne", "%.1f", r.n_eff);
+
+    for (int i = 0; i < 4; ++i)
+        pf(( std::string("or.") + std::to_string(i) ).c_str(), "%.2f", r.observed_readings[i]);
+
+    pf("op.x", "%.2f", r.odom_pose.x);
+    pf("op.y", "%.2f", r.odom_pose.y);
+    pf("op.t", "%.1f", r.odom_pose.theta);
+
+    pf("re.x", "%.2f", r.raw_estimate.x);
+    pf("re.y", "%.2f", r.raw_estimate.y);
+    pf("re.t", "%.1f", r.raw_estimate.theta);
+
+    pf("cs.x", "%.2f", static_cast<double>(r.cluster_stats.centroid.x));
+    pf("cs.y", "%.2f", static_cast<double>(r.cluster_stats.centroid.y));
+    pf("cs.r", "%.2f", r.cluster_stats.radius_90);
+    pf("cs.s", "%.2f", r.cluster_stats.spread);
+
+    const auto& g = r.gate;
+    pb("g.a", g.accepted);
+    pf("g.rsn", "%s", g.reason.c_str());
+    pf("g.r", "%.2f", g.radius_90_in);
+    pf("g.j", "%.2f", g.jump_in);
+    pf("g.s", "%.2f", g.spread_in);
+    pb("g.fcj", g.failed_centroid_jump);
+    pb("g.fr", g.failed_r90);
+    pb("g.fp", g.failed_passability);
+    pb("g.fres", g.failed_residual);
+    pb("g.wcj", g.would_fail_centroid_jump);
+    pb("g.wr", g.would_fail_r90);
+    pb("g.wp", g.would_fail_passability);
+    pb("g.wres", g.would_fail_residual);
+    pf("g.msr", "%.2f", g.max_sensor_residual_in);
+    pf("g.rt", "%.3f", g.residual_threshold_in);
+    pf("g.cj", "%.2f", g.centroid_jump_ft_per_s);
+    pf("g.ne", "%.1f", g.n_eff_at_gate);
+
+    for (int i = 0; i < 4; ++i)
+        pf(( std::string("pr.") + std::to_string(i) ).c_str(), "%.2f", r.mcl_predicted_readings[i]);
+    for (int i = 0; i < 4; ++i)
+        pf(( std::string("sr.") + std::to_string(i) ).c_str(), "%.2f", r.mcl_sensor_residuals[i]);
+
+    auto ps = [&](const char* prefix, const PhaseSnapshot& s) {
+        pf(( std::string(prefix) + ".x" ).c_str(), "%.2f", static_cast<double>(s.estimate.x));
+        pf(( std::string(prefix) + ".y" ).c_str(), "%.2f", static_cast<double>(s.estimate.y));
+        pf(( std::string(prefix) + ".n" ).c_str(), "%.1f", s.n_eff);
+        pf(( std::string(prefix) + ".s" ).c_str(), "%.2f", s.spread);
+        pf(( std::string(prefix) + ".r" ).c_str(), "%.2f", s.radius_90);
+    };
+    ps("pp", r.post_predict);
+    ps("pu", r.post_update);
+    ps("ps", r.post_resample);
+
+    std::fflush(stdout);
 }
 
 } // namespace
@@ -188,7 +256,11 @@ MCLTickResult MCLController::tick(
         out.gate = gate_estimate(*field, readings, heading_deg, *prev_accepted, dt_sec, effective_enables);
     }
 
-    emit_log("tick", nlohmann::json(out));
+    nlohmann::json log_json(out);
+    log_json["observed_heading"] = heading_deg;
+    log_json["pose_gated"] = !out.gate.accepted;
+    log_json["timestamp_iso"] = iso_timestamp_utc();
+    emit_log("tick", std::move(log_json), &out, heading_deg);
     return out;
 }
 
@@ -219,19 +291,13 @@ nlohmann::json MCLController::snapshot_json() const {
     };
 }
 
-void MCLController::emit_log(const char* phase, nlohmann::json extra) const {
+void MCLController::emit_log(const char* phase, nlohmann::json extra,
+                             const MCLTickResult* tick_result, double heading_deg) const {
     extra["phase"] = phase;
 #ifndef NDEBUG_LOG
-    if (std::string(phase) == "tick" &&
+    if (std::string(phase) == "tick" && tick_result != nullptr &&
         (log_interval_ticks_ <= 1 || tick_count_ % static_cast<uint64_t>(log_interval_ticks_) == 0)) {
-        remove_particles_fields(extra);
-        std::vector<std::pair<std::string, std::string>> kvs;
-        flatten_json(extra, "", kvs);
-        for (const auto& [key, val] : kvs) {
-            std::printf("[TICK=%llu || %s]=%s\n",
-                        static_cast<unsigned long long>(tick_count_), key.c_str(), val.c_str());
-        }
-        std::fflush(stdout);
+        emit_compact_tick(tick_count_, *tick_result, heading_deg);
     }
 #endif
 }
