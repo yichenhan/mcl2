@@ -137,6 +137,14 @@ void LocalizationController::compute_odom_deltas(
     delta_lateral_in = dx * c - dy * s;
     delta_rotation_deg = heading_delta(input.odom_pose.theta, prev_odom_pose_.theta);
 
+    // Sanity clamp: a VEX robot cannot move more than ~36 in/s; at 50 Hz
+    // tick rate that's <1 inch per tick, but allow a generous ceiling for
+    // jitter and low-rate ticks.  Without this, a single encoder glitch
+    // teleports every particle outside the field.
+    constexpr double kMaxDeltaIn = 12.0;
+    delta_forward_in = std::max(-kMaxDeltaIn, std::min(kMaxDeltaIn, delta_forward_in));
+    delta_lateral_in = std::max(-kMaxDeltaIn, std::min(kMaxDeltaIn, delta_lateral_in));
+
     prev_odom_pose_.x = input.odom_pose.x;
     prev_odom_pose_.y = input.odom_pose.y;
     prev_odom_pose_.theta = input.odom_pose.theta;

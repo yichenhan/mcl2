@@ -71,6 +71,16 @@ void MCLEngine::predict(double delta_forward,
         p.x += static_cast<float>(dx);
         p.y += static_cast<float>(dy);
     }
+
+    // Clamp particles to field bounds after movement.
+    // Without this, a single odom spike can push ALL particles outside
+    // the field permanently — update() gives them equal (junk) weights,
+    // n_eff stays at N, and resample never triggers the clamping code.
+    const float fh = static_cast<float>(config_.field_half);
+    for (auto& p : particles_) {
+        p.x = std::max(-fh, std::min(fh, p.x));
+        p.y = std::max(-fh, std::min(fh, p.y));
+    }
 }
 
 void MCLEngine::update(const double readings[4], double heading_deg) {
@@ -204,10 +214,12 @@ void MCLEngine::resample() {
     const double avg_raw_weight = last_raw_weight_sum_ / N;
     const bool filter_lost = (avg_raw_weight < config_.lost_weight_threshold);
 
-    const double active_threshold = (bootstrap_active || filter_lost)
-        ? 0.999999
-        : config_.resample_threshold;
-    if (neff_ratio >= active_threshold) return;
+    // Always resample during bootstrap or when filter is lost (all particles
+    // scored near-zero).  The lost case is critical: when every particle is
+    // outside the field they all receive equal junk weights, n_eff = N, and
+    // the normal threshold check would skip resampling — leaving particles
+    // stuck outside the field permanently.
+    if (!bootstrap_active && !filter_lost && neff_ratio >= config_.resample_threshold) return;
 
     // Low-variance resampling
     std::vector<Particle> new_particles;
