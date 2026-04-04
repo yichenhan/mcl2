@@ -17,13 +17,13 @@ namespace mcl {
 struct GateConfig {
     double max_centroid_jump_ft_per_s = 360.0 / 12.0;
     double max_jump_in = 12.0;
-    double max_radius_90_in = 5.0;
+    double max_radius_90_in = 6.5;
     // Distance-dependent residual thresholds (100% tolerance over sensor spec).
     // < 200mm: spec ±15mm → ×2 = 30mm = 1.181 in.
     // ≥ 200mm: spec 5%   → ×2 = 10% of reading.
     double sensor_close_range_in = 7.874;
-    double sensor_close_tolerance_in = 2.5;
-    double sensor_far_tolerance_pct = 0.15;
+    double sensor_close_tolerance_in = 4.0;
+    double sensor_far_tolerance_pct = 0.25;
     int min_valid_sensors_for_residual = 2;
 };
 
