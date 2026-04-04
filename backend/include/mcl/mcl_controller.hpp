@@ -292,7 +292,7 @@ private:
     GateConfig gate_config_;
     LogFn log_fn_;
     uint64_t tick_count_ = 0;
-    int log_interval_ticks_ = 1;
+    int log_interval_ticks_ = 4;
 };
 
 } // namespace mcl
