@@ -13,7 +13,7 @@ interface Props {
 
 const LABELS: Record<keyof OverlayFlags, string> = {
   robotTruth: "Robot True Location",
-  odomPose: "Chassis Pose",
+  rawOdom: "Raw Odom (uncorrected)",
   mclEstimate: "MCL Estimate",
   acceptedEstimate: "MCL Accepted Estimate",
   r90Circle: "R90 Circle",
@@ -53,7 +53,7 @@ function OverlayLegendIcon({ overlayKey }: { overlayKey: keyof OverlayFlags }) {
           <polygon points="18,1 7,17 29,17" fill="#22c55e" />
         </svg>
       );
-    case "odomPose":
+    case "rawOdom":
       return (
         <svg className={common} width="36" height="18" viewBox="0 0 36 18" aria-hidden>
           <polygon points="18,1 7,17 29,17" fill="#10b981" stroke="#d1fae5" strokeWidth="1" />

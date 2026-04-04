@@ -18,7 +18,7 @@ TEST_CASE("TickState JSON roundtrip preserves core fields") {
     t.odom_error = 1.1;
     t.valid_sensor_count = 3;
     t.timestamp_iso = "2026-03-25T15:00:00Z";
-    t.odom_pose = {1.0, 2.0, 90.0};
+    t.raw_odom = {1.0, 2.0, 90.0};
     t.raw_estimate = {5.0f, 6.0f};
     t.accepted_estimate = {7.0f, 8.0f};
     t.gate_decision.accepted = false;
@@ -38,7 +38,7 @@ TEST_CASE("TickState JSON roundtrip preserves core fields") {
     CHECK(rt.active_failures.size() == 1);
     CHECK(rt.valid_sensor_count == 3);
     CHECK(rt.timestamp_iso == t.timestamp_iso);
-    CHECK(rt.odom_pose.theta == doctest::Approx(90.0));
+    CHECK(rt.raw_odom.theta == doctest::Approx(90.0));
     CHECK(rt.raw_estimate.x == doctest::Approx(5.0f));
     CHECK(rt.accepted_estimate.y == doctest::Approx(8.0f));
     CHECK_FALSE(rt.gate_decision.accepted);

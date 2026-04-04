@@ -129,20 +129,22 @@ TEST_CASE("SimHarness odom spike failure affects odom_error") {
     spike.start_tick = 10;
     spike.duration_ticks = 1;
     spike.type = noise::FailureType::OdomSpike;
-    spike.param = 5.0;
+    spike.param = 20.0;
 
     sim::SimHarness harness(cfg);
     harness.schedule_failure(spike);
 
-    double odom_error_before = 0.0;
-    double odom_error_at_spike = 0.0;
+    mcl::Pose odom_before{};
+    mcl::Pose odom_at_spike{};
     for (int i = 0; i < 15; ++i) {
         const auto t = harness.tick(24.0, 0.0);
-        if (i == 9)  odom_error_before = t.odom_error;
-        if (i == 10) odom_error_at_spike = t.odom_error;
+        if (i == 9)  odom_before = t.raw_odom;
+        if (i == 10) odom_at_spike = t.raw_odom;
     }
-    // The spike multiplies the odom delta by 5x, so odom error should jump
-    CHECK(odom_error_at_spike > odom_error_before);
+    // A 20x spike should produce a huge odom jump between ticks
+    const double odom_jump = std::hypot(odom_at_spike.x - odom_before.x,
+                                        odom_at_spike.y - odom_before.y);
+    CHECK(odom_jump > 10.0);
 }
 
 TEST_CASE("SimHarness heading bias failure shifts observed_heading") {

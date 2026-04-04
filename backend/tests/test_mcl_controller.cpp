@@ -183,9 +183,9 @@ TEST_CASE("MCLController tick exposes odom pose and sensor diagnostics") {
         nullptr,
         &odom);
 
-    CHECK(out.odom_pose.x == doctest::Approx(12.0));
-    CHECK(out.odom_pose.y == doctest::Approx(-3.0));
-    CHECK(out.odom_pose.theta == doctest::Approx(90.0));
+    CHECK(out.raw_odom.x == doctest::Approx(12.0));
+    CHECK(out.raw_odom.y == doctest::Approx(-3.0));
+    CHECK(out.raw_odom.theta == doctest::Approx(90.0));
     CHECK(out.observed_readings[0] == doctest::Approx(10.0));
     CHECK(out.observed_readings[1] == doctest::Approx(20.0));
     CHECK(out.observed_readings[2] == doctest::Approx(-1.0));
@@ -202,9 +202,9 @@ TEST_CASE("MCLController tick exposes odom pose and sensor diagnostics") {
 
     const nlohmann::json j = out;
     const mcl::MCLTickResult decoded = j.get<mcl::MCLTickResult>();
-    CHECK(decoded.odom_pose.x == doctest::Approx(out.odom_pose.x));
-    CHECK(decoded.odom_pose.y == doctest::Approx(out.odom_pose.y));
-    CHECK(decoded.odom_pose.theta == doctest::Approx(out.odom_pose.theta));
+    CHECK(decoded.raw_odom.x == doctest::Approx(out.raw_odom.x));
+    CHECK(decoded.raw_odom.y == doctest::Approx(out.raw_odom.y));
+    CHECK(decoded.raw_odom.theta == doctest::Approx(out.raw_odom.theta));
     CHECK(decoded.observed_readings[0] == doctest::Approx(out.observed_readings[0]));
     CHECK(decoded.observed_readings[1] == doctest::Approx(out.observed_readings[1]));
     CHECK(decoded.observed_readings[2] == doctest::Approx(out.observed_readings[2]));
@@ -237,9 +237,9 @@ TEST_CASE("MCLController tick keeps default diagnostics without pose or field") 
         nullptr,
         0.05);
 
-    CHECK(out.odom_pose.x == doctest::Approx(0.0));
-    CHECK(out.odom_pose.y == doctest::Approx(0.0));
-    CHECK(out.odom_pose.theta == doctest::Approx(0.0));
+    CHECK(out.raw_odom.x == doctest::Approx(0.0));
+    CHECK(out.raw_odom.y == doctest::Approx(0.0));
+    CHECK(out.raw_odom.theta == doctest::Approx(0.0));
     CHECK(out.mcl_predicted_readings[0] == doctest::Approx(-1.0));
     CHECK(out.mcl_predicted_readings[1] == doctest::Approx(-1.0));
     CHECK(out.mcl_predicted_readings[2] == doctest::Approx(-1.0));

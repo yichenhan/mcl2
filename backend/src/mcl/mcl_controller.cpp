@@ -67,9 +67,9 @@ void emit_compact_tick(uint64_t tick,
     for (int i = 0; i < 4; ++i)
         pf(( std::string("or.") + std::to_string(i) ).c_str(), "%.3f", r.observed_readings[i]);
 
-    pf("op.x", "%.3f", r.odom_pose.x);
-    pf("op.y", "%.3f", r.odom_pose.y);
-    pf("op.t", "%.3f", r.odom_pose.theta);
+    pf("op.x", "%.3f", r.raw_odom.x);
+    pf("op.y", "%.3f", r.raw_odom.y);
+    pf("op.t", "%.3f", r.raw_odom.theta);
 
     pf("re.x", "%.3f", r.raw_estimate.x);
     pf("re.y", "%.3f", r.raw_estimate.y);
@@ -206,7 +206,7 @@ MCLTickResult MCLController::tick(
     MCLTickResult out;
     out.tick_count = ++tick_count_;
     if (odom_pose != nullptr) {
-        out.odom_pose = *odom_pose;
+        out.raw_odom = *odom_pose;
     }
     out.observed_readings = readings;
     for (double reading : readings) {

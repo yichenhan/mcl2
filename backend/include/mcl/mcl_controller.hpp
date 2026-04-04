@@ -15,7 +15,7 @@ namespace mcl {
 struct GateConfig {
     double max_centroid_jump_ft_per_s = 360.0 / 12.0;
     double max_jump_in = 12.0;
-    double max_radius_90_in = 4.0;
+    double max_radius_90_in = 6.0;
     // Distance-dependent residual thresholds (100% tolerance over sensor spec).
     // < 200mm: spec ±15mm → ×2 = 30mm = 1.181 in.
     // ≥ 200mm: spec 5%   → ×2 = 10% of reading.
@@ -70,7 +70,7 @@ struct PhaseSnapshot {
 
 struct MCLTickResult {
     uint64_t tick_count = 0;
-    Pose odom_pose{};
+    Pose raw_odom{};
     Pose raw_estimate{};
     std::array<double, 4> observed_readings{ -1.0, -1.0, -1.0, -1.0 };
     std::array<double, 4> mcl_sensor_residuals{ 0.0, 0.0, 0.0, 0.0 };
@@ -182,7 +182,7 @@ inline void from_json(const nlohmann::json& j, GateDecision& d) {
 inline void to_json(nlohmann::json& j, const MCLTickResult& r) {
     j = nlohmann::json{
         { "tick_count", r.tick_count },
-        { "odom_pose", r.odom_pose },
+        { "raw_odom", r.raw_odom },
         { "raw_estimate", r.raw_estimate },
         { "observed_readings", r.observed_readings },
         { "mcl_sensor_residuals", r.mcl_sensor_residuals },
@@ -207,7 +207,8 @@ inline void to_json(nlohmann::json& j, const MCLTickResult& r) {
 
 inline void from_json(const nlohmann::json& j, MCLTickResult& r) {
     r.tick_count = j.value("tick_count", 0ULL);
-    r.odom_pose = j.value("odom_pose", Pose{});
+    r.raw_odom = j.contains("raw_odom") ? j["raw_odom"].get<Pose>()
+                 : j.value("odom_pose", Pose{});
     r.raw_estimate = j.value("raw_estimate", Pose{});
     r.observed_readings = j.value("observed_readings", std::array<double, 4>{ -1.0, -1.0, -1.0, -1.0 });
     r.mcl_sensor_residuals = j.value("mcl_sensor_residuals", std::array<double, 4>{ 0.0, 0.0, 0.0, 0.0 });

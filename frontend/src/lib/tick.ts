@@ -38,10 +38,10 @@ export function toTickState(raw: unknown): TickState {
 
   const rawEstimate = r.raw_estimate ?? (cs?.centroid ? { x: cs.centroid.x, y: cs.centroid.y, theta: r.observed_heading ?? 0 } : undefined);
 
-  const odomPose = r.odom_pose
-    && typeof r.odom_pose.x === "number"
-    && typeof r.odom_pose.y === "number"
-    ? r.odom_pose
+  const rawOdom = r.raw_odom
+    && typeof r.raw_odom.x === "number"
+    && typeof r.raw_odom.y === "number"
+    ? r.raw_odom
     : undefined;
 
   return {
@@ -60,7 +60,7 @@ export function toTickState(raw: unknown): TickState {
     valid_sensor_count: r.valid_sensor_count ?? 0,
     update_skipped: r.update_skipped ?? false,
     pose_gated: r.pose_gated ?? false,
-    odom_pose: odomPose,
+    raw_odom: rawOdom,
     raw_estimate: rawEstimate,
     accepted_estimate: r.accepted_estimate,
     gate_decision: gateDecision,

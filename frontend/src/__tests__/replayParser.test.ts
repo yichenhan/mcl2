@@ -81,11 +81,11 @@ describe("parseReplayText – compact [T=N||k]=v format", () => {
     expect(t.observed_readings).toEqual([10.0, 10.0, -1.0, -1.0]);
   });
 
-  it("expands odom_pose correctly", () => {
+  it("expands raw_odom correctly", () => {
     const t = parseReplayText(COMPACT_SAMPLE)[0];
-    expect(t.odom_pose).toBeDefined();
-    expect(t.odom_pose!.x).toBeCloseTo(5.5);
-    expect(t.odom_pose!.y).toBeCloseTo(3.2);
+    expect(t.raw_odom).toBeDefined();
+    expect(t.raw_odom!.x).toBeCloseTo(5.5);
+    expect(t.raw_odom!.y).toBeCloseTo(3.2);
   });
 
   it("expands cluster_stats correctly", () => {

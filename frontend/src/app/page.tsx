@@ -45,7 +45,7 @@ export default function Home() {
   });
   const [overlayFlags, setOverlayFlags] = useState<OverlayFlags>({
     robotTruth: true,
-    odomPose: true,
+    rawOdom: true,
     mclEstimate: true,
     acceptedEstimate: true,
     r90Circle: true,

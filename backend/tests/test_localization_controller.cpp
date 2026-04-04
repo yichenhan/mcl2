@@ -169,7 +169,8 @@ TEST_CASE("LocalizationController rejects large jumps when centroid jump gate en
     mcl::LocalizationController c(cfg);
 
     // Force MCL estimate far from odom; centroid jump gate should reject this correction.
-    set_all_particles(c, 100.0f, 100.0f);
+    // Position must be inside the field so predict clamping doesn't distort it.
+    set_all_particles(c, 60.0f, 60.0f);
 
     mcl::TickInput t0;
     t0.odom_pose = {0.0, 0.0, 0.0};

@@ -243,8 +243,16 @@ TEST_CASE("MCL predict: each particle shifts by the same amount (no noise in Pha
     for (size_t i = 0; i < mcl.particles().size(); i++) {
         double actual_dx = mcl.particles()[i].x - orig_x[i];
         double actual_dy = mcl.particles()[i].y - orig_y[i];
-        CHECK(actual_dx == doctest::Approx(expected_dx).epsilon(1e-3));
-        CHECK(actual_dy == doctest::Approx(expected_dy).epsilon(1e-3));
+        // Particles near the field boundary may be clamped after predict
+        const float fh = static_cast<float>(cfg.field_half);
+        bool clamped_x = (orig_x[i] + expected_dx > fh) || (orig_x[i] + expected_dx < -fh);
+        bool clamped_y = (orig_y[i] + expected_dy > fh) || (orig_y[i] + expected_dy < -fh);
+        if (!clamped_x) {
+            CHECK(actual_dx == doctest::Approx(expected_dx).epsilon(1e-3));
+        }
+        if (!clamped_y) {
+            CHECK(actual_dy == doctest::Approx(expected_dy).epsilon(1e-3));
+        }
     }
 }
 

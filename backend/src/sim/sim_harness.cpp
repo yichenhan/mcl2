@@ -134,7 +134,7 @@ state::TickState SimHarness::process_step(const StepResult& step) {
     out.accepted_error = euclidean(result.chassis_pose.x, result.chassis_pose.y, truth.x, truth.y);
 
     // Pose snapshots
-    out.odom_pose = result.raw_odom;
+    out.raw_odom = result.raw_odom;
     out.raw_estimate = {
         static_cast<float>(mcl.raw_estimate.x),
         static_cast<float>(mcl.raw_estimate.y)

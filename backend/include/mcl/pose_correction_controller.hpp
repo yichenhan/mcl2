@@ -93,8 +93,8 @@ public:
 
         if (out.gate.accepted) {
             // Only correct X/Y. Heading is trusted from odom/IMU directly.
-            odom_offset_.x += out.accepted_pose.x - raw_x;
-            odom_offset_.y += out.accepted_pose.y - raw_y;
+            odom_offset_.x = out.accepted_pose.x - raw_x;
+            odom_offset_.y = out.accepted_pose.y - raw_y;
             chassis_.setPose(
                 static_cast<float>(out.accepted_pose.x),
                 static_cast<float>(out.accepted_pose.y),

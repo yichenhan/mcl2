@@ -212,14 +212,25 @@ void MCLEngine::resample() {
     }
 
     const double avg_raw_weight = last_raw_weight_sum_ / N;
-    const bool filter_lost = (avg_raw_weight < config_.lost_weight_threshold);
+    // Only flag "lost" when at least one update() has run (sum > 0 means
+    // update has scored particles).  Before any update, sum == 0 and we
+    // should NOT treat the freshly initialized filter as lost.
+    const bool filter_lost = (last_raw_weight_sum_ > 0.0)
+        && (avg_raw_weight < config_.lost_weight_threshold);
 
     // Always resample during bootstrap or when filter is lost (all particles
     // scored near-zero).  The lost case is critical: when every particle is
     // outside the field they all receive equal junk weights, n_eff = N, and
     // the normal threshold check would skip resampling — leaving particles
     // stuck outside the field permanently.
-    if (!bootstrap_active && !filter_lost && neff_ratio >= config_.resample_threshold) return;
+    if (filter_lost) {
+        // Force resampling regardless of n_eff
+    } else {
+        const double active_threshold = bootstrap_active
+            ? 0.999999
+            : config_.resample_threshold;
+        if (neff_ratio >= active_threshold) return;
+    }
 
     // Low-variance resampling
     std::vector<Particle> new_particles;

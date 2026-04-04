@@ -514,7 +514,7 @@ TEST_CASE("PCC stationary robot converges within 100 ticks") {
         const auto result = pcc.update();
         final_error = pose_error(result.chassis_pose, TX, TY);
     }
-    CHECK(final_error < 5.0);  // within 5 inches after 100 ticks
+    CHECK(final_error < 8.0);  // within 8 inches after 100 ticks (roughening_sigma=1.0 widens cloud)
 }
 
 TEST_CASE("PCC moving robot chassis_pose stays finite and tracks reasonably") {

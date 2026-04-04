@@ -138,7 +138,7 @@ export function FieldCanvas({
   const selected = useMemo(() => (tick ? pickSnapshot(tick, stage) : null), [tick, stage]);
   const flags: OverlayFlags = overlayFlags ?? {
     robotTruth: true,
-    odomPose: true,
+    rawOdom: true,
     mclEstimate: true,
     acceptedEstimate: true,
     r90Circle: true,
@@ -400,8 +400,8 @@ export function FieldCanvas({
 
       // Use the best available pose for sensor rays and failure overlays
       const robotPose = mclPose
-        ?? (tick.odom_pose && typeof tick.odom_pose.x === "number"
-          ? { x: tick.odom_pose.x, y: tick.odom_pose.y, theta: tick.odom_pose.theta ?? 0 }
+        ?? (tick.raw_odom && typeof tick.raw_odom.x === "number"
+          ? { x: tick.raw_odom.x, y: tick.raw_odom.y, theta: tick.raw_odom.theta ?? 0 }
           : { x: 0, y: 0, theta: 0 });
 
       // Ground truth overlay (debug -- shown when robotTruth flag is ON and data exists)
@@ -512,9 +512,9 @@ export function FieldCanvas({
       });
       ctx.setLineDash([]);
 
-      // Chassis Pose arrow (green) — raw getPose(), no corrections
-      if (flags.odomPose && tick.odom_pose) {
-        const op = tick.odom_pose;
+      // Raw Odom arrow (green) — uncorrected odometry, no MCL corrections
+      if (flags.rawOdom && tick.raw_odom) {
+        const op = tick.raw_odom;
         const opDir = headingToDir(op.theta ?? 0);
         const opPerp = { x: opDir.y, y: -opDir.x };
         const opFront = toCanvas(op.x + opDir.x * 3, op.y + opDir.y * 3);
@@ -546,9 +546,9 @@ export function FieldCanvas({
         ctx.arc(c.x, c.y, tick.post_resample.radius_90 * scale, 0, Math.PI * 2);
         ctx.stroke();
       }
-      if (tick.raw_estimate && tick.odom_pose && flags.diffMclPose) {
+      if (tick.raw_estimate && tick.raw_odom && flags.diffMclPose) {
         const a = toCanvas(tick.raw_estimate.x, tick.raw_estimate.y);
-        const b = toCanvas(tick.odom_pose.x, tick.odom_pose.y);
+        const b = toCanvas(tick.raw_odom.x, tick.raw_odom.y);
         ctx.strokeStyle = "rgba(229,231,235,0.8)";
         ctx.setLineDash([4, 4]);
         ctx.beginPath();
@@ -568,8 +568,8 @@ export function FieldCanvas({
         ctx.stroke();
         ctx.setLineDash([]);
       }
-      if (hasGt && tick.odom_pose && flags.diffPoseTruth) {
-        const a = toCanvas(tick.odom_pose.x, tick.odom_pose.y);
+      if (hasGt && tick.raw_odom && flags.diffPoseTruth) {
+        const a = toCanvas(tick.raw_odom.x, tick.raw_odom.y);
         const b = toCanvas(gt.x, gt.y);
         ctx.strokeStyle = "rgba(34,197,94,0.8)";
         ctx.setLineDash([3, 5]);
@@ -585,8 +585,8 @@ export function FieldCanvas({
       // 2) MCL prediction with heading (raw estimate)
       // 3) Sensor readings from odom pose
       // 4) MCL diff vector and magnitude between odom and MCL prediction
-      if (tick.odom_pose) {
-        const odom = tick.odom_pose;
+      if (tick.raw_odom) {
+        const odom = tick.raw_odom;
         const odomDir = headingToDir(odom.theta);
         const odomPerp = { x: odomDir.y, y: -odomDir.x };
         const front = toCanvas(odom.x + odomDir.x * 3, odom.y + odomDir.y * 3);
@@ -607,8 +607,8 @@ export function FieldCanvas({
         ctx.fill();
       }
 
-      if (tick.odom_pose && tick.observed_readings) {
-        const odom = tick.odom_pose;
+      if (tick.raw_odom && tick.observed_readings) {
+        const odom = tick.raw_odom;
         const odomPt = toCanvas(odom.x, odom.y);
         const angles = [-90, 90, 0, 180];
         ctx.setLineDash([4, 4]);
@@ -658,8 +658,8 @@ export function FieldCanvas({
         ctx.lineTo(rawFront.x, rawFront.y);
         ctx.stroke();
 
-        if (tick.odom_pose) {
-          const odom = tick.odom_pose;
+        if (tick.raw_odom) {
+          const odom = tick.raw_odom;
           const odomPt = toCanvas(odom.x, odom.y);
           const dx = tick.raw_estimate.x - odom.x;
           const dy = tick.raw_estimate.y - odom.y;

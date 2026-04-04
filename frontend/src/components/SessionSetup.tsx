@@ -16,7 +16,7 @@ const FIELD_HALF = 72;
 
 const SETUP_PREVIEW_OVERLAYS: OverlayFlags = {
   robotTruth: false,
-  odomPose: false,
+  rawOdom: false,
   mclEstimate: false,
   acceptedEstimate: false,
   r90Circle: false,

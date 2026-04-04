@@ -82,7 +82,7 @@ export interface TickState {
   valid_sensor_count: number;
   update_skipped?: boolean;
   pose_gated?: boolean;
-  odom_pose?: Pose;
+  raw_odom?: Pose;
   raw_estimate?: Pose;
   accepted_estimate?: Estimate;
   /** MCL-corrected pose used for all movement decisions (Phase 4+). */
@@ -198,7 +198,7 @@ export interface MCLClusterStats {
 
 export interface MCLTickResult {
   tick_count?: number;
-  odom_pose?: Pose;
+  raw_odom?: Pose;
   raw_estimate: Pose;
   observed_readings?: [number, number, number, number];
   mcl_sensor_residuals?: [number, number, number, number];
@@ -289,7 +289,7 @@ export interface FailureConfig {
 
 export interface OverlayFlags {
   robotTruth: boolean;
-  odomPose: boolean;
+  rawOdom: boolean;
   mclEstimate: boolean;
   acceptedEstimate: boolean;
   r90Circle: boolean;

@@ -186,7 +186,7 @@ TickOutput LocalizationController::tick_mcl(const TickInput& input) {
     const std::array<double, 4> readings_in = readings_to_inches(input.sensors);
     out.observed_readings = readings_in;
     out.valid_sensor_count = count_valid(readings_in);
-    out.odom_pose = { input.odom_pose.x, input.odom_pose.y, input.odom_pose.theta };
+    out.raw_odom = { input.odom_pose.x, input.odom_pose.y, input.odom_pose.theta };
 
     mcl_->predict(delta_forward, delta_rotation, heading_deg, delta_lateral);
     fill_snapshot(*mcl_, out.post_predict);

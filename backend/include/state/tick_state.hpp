@@ -32,7 +32,7 @@ struct TickState {
     bool update_skipped = false;
     bool pose_gated = false;
     std::string timestamp_iso;
-    mcl::Pose odom_pose{};
+    mcl::Pose raw_odom{};
     mcl::Estimate raw_estimate{};
     mcl::Estimate accepted_estimate{};
     mcl::GateDecision gate_decision{};
@@ -65,7 +65,7 @@ inline void to_json(nlohmann::json& j, const TickState& t) {
     j["update_skipped"] = t.update_skipped;
     j["pose_gated"] = t.pose_gated;
     j["timestamp_iso"] = t.timestamp_iso;
-    j["odom_pose"] = t.odom_pose;
+    j["raw_odom"] = t.raw_odom;
     j["raw_estimate"] = {
         { "x", t.raw_estimate.x },
         { "y", t.raw_estimate.y },
@@ -109,7 +109,8 @@ inline void from_json(const nlohmann::json& j, TickState& t) {
     if (j.contains("pose_gated"))
         t.pose_gated = j.at("pose_gated").get<bool>();
     t.timestamp_iso = j.value("timestamp_iso", std::string{});
-    t.odom_pose = j.value("odom_pose", mcl::Pose{});
+    t.raw_odom = j.contains("raw_odom") ? j["raw_odom"].get<mcl::Pose>()
+                 : j.value("odom_pose", mcl::Pose{});
     if (j.contains("raw_estimate")) {
         const auto& raw = j["raw_estimate"];
         t.raw_estimate.x = raw.value("x", 0.0f);
