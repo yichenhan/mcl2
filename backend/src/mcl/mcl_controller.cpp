@@ -41,99 +41,6 @@ std::string iso_timestamp_utc() {
     return oss.str();
 }
 
-void append_compact_line(std::ostringstream& oss, unsigned long long tick,
-                         const std::string& key, const std::string& value) {
-    oss << "[T=" << tick << "||" << key << "]=" << value << '\n';
-}
-
-void append_compact_bool(std::ostringstream& oss, unsigned long long tick,
-                         const std::string& key, bool value) {
-    append_compact_line(oss, tick, key, value ? "1" : "0");
-}
-
-void append_compact_float(std::ostringstream& oss, unsigned long long tick,
-                          const std::string& key, double value, int precision = 3) {
-    std::ostringstream value_stream;
-    value_stream << std::fixed << std::setprecision(precision) << value;
-    append_compact_line(oss, tick, key, value_stream.str());
-}
-
-void append_compact_int(std::ostringstream& oss, unsigned long long tick,
-                        const std::string& key, long long value) {
-    append_compact_line(oss, tick, key, std::to_string(value));
-}
-
-std::string build_compact_tick_message(uint64_t tick,
-                                       const MCLTickResult& r,
-                                       double heading_deg) {
-    const auto T = static_cast<unsigned long long>(tick);
-    std::ostringstream oss;
-
-    append_compact_int(oss, T, "tc", static_cast<long long>(T));
-    append_compact_float(oss, T, "oh", heading_deg);
-    append_compact_bool(oss, T, "pg", !r.gate.accepted);
-    append_compact_line(oss, T, "ts", iso_timestamp_utc());
-    append_compact_int(oss, T, "vs", r.valid_sensor_count);
-    append_compact_bool(oss, T, "us", r.update_skipped);
-    append_compact_float(oss, T, "ne", r.n_eff);
-
-    for (int i = 0; i < 4; ++i)
-        append_compact_float(oss, T, std::string("or.") + std::to_string(i), r.observed_readings[i]);
-
-    append_compact_float(oss, T, "op.x", r.raw_odom.x);
-    append_compact_float(oss, T, "op.y", r.raw_odom.y);
-    append_compact_float(oss, T, "op.t", r.raw_odom.theta);
-
-    append_compact_float(oss, T, "re.x", r.raw_estimate.x);
-    append_compact_float(oss, T, "re.y", r.raw_estimate.y);
-    append_compact_float(oss, T, "re.t", r.raw_estimate.theta);
-
-    append_compact_float(oss, T, "cp.x", r.chassis_pose.x);
-    append_compact_float(oss, T, "cp.y", r.chassis_pose.y);
-    append_compact_float(oss, T, "cp.t", r.chassis_pose.theta);
-
-    append_compact_float(oss, T, "cs.x", static_cast<double>(r.cluster_stats.centroid.x));
-    append_compact_float(oss, T, "cs.y", static_cast<double>(r.cluster_stats.centroid.y));
-    append_compact_float(oss, T, "cs.r", r.cluster_stats.radius_90);
-    append_compact_float(oss, T, "cs.s", r.cluster_stats.spread);
-
-    const auto& g = r.gate;
-    append_compact_bool(oss, T, "g.a", g.accepted);
-    append_compact_line(oss, T, "g.rsn", g.reason);
-    append_compact_float(oss, T, "g.r", g.radius_90_in);
-    append_compact_float(oss, T, "g.j", g.jump_in);
-    append_compact_float(oss, T, "g.s", g.spread_in);
-    append_compact_bool(oss, T, "g.fcj", g.failed_centroid_jump);
-    append_compact_bool(oss, T, "g.fr", g.failed_r90);
-    append_compact_bool(oss, T, "g.fp", g.failed_passability);
-    append_compact_bool(oss, T, "g.fres", g.failed_residual);
-    append_compact_bool(oss, T, "g.wcj", g.would_fail_centroid_jump);
-    append_compact_bool(oss, T, "g.wr", g.would_fail_r90);
-    append_compact_bool(oss, T, "g.wp", g.would_fail_passability);
-    append_compact_bool(oss, T, "g.wres", g.would_fail_residual);
-    append_compact_float(oss, T, "g.msr", g.max_sensor_residual_in);
-    append_compact_float(oss, T, "g.rt", g.residual_threshold_in);
-    append_compact_float(oss, T, "g.cj", g.centroid_jump_ft_per_s);
-    append_compact_float(oss, T, "g.ne", g.n_eff_at_gate);
-
-    for (int i = 0; i < 4; ++i)
-        append_compact_float(oss, T, std::string("pr.") + std::to_string(i), r.mcl_predicted_readings[i]);
-    for (int i = 0; i < 4; ++i)
-        append_compact_float(oss, T, std::string("sr.") + std::to_string(i), r.mcl_sensor_residuals[i]);
-
-    auto ps = [&](const char* prefix, const PhaseSnapshot& s) {
-        append_compact_float(oss, T, std::string(prefix) + ".x", static_cast<double>(s.estimate.x));
-        append_compact_float(oss, T, std::string(prefix) + ".y", static_cast<double>(s.estimate.y));
-        append_compact_float(oss, T, std::string(prefix) + ".n", s.n_eff);
-        append_compact_float(oss, T, std::string(prefix) + ".s", s.spread);
-        append_compact_float(oss, T, std::string(prefix) + ".r", s.radius_90);
-    };
-    ps("pp", r.post_predict);
-    ps("pu", r.post_update);
-    ps("ps", r.post_resample);
-    return oss.str();
-}
-
 } // namespace
 
 MCLController::MCLController(
@@ -322,8 +229,25 @@ void MCLController::log_tick_result(const MCLTickResult& result, double heading_
 #ifndef NDEBUG_LOG
     if (log_interval_ticks_ <= 1
         || result.tick_count % static_cast<uint64_t>(log_interval_ticks_) == 0) {
-        const std::string payload = build_compact_tick_message(result.tick_count, result, heading_deg);
-        std::fwrite(payload.data(), 1, payload.size(), stdout);
+        const auto T = static_cast<unsigned long long>(result.tick_count);
+        const auto& r = result;
+        const auto& g = r.gate;
+        std::printf("[T=%llu||tc]=%llu\n", T, T);
+        std::printf("[T=%llu||oh]=%.1f\n", T, heading_deg);
+        std::printf("[T=%llu||vs]=%d\n", T, r.valid_sensor_count);
+        std::printf("[T=%llu||or]=[%.1f,%.1f,%.1f,%.1f]\n", T,
+                    r.observed_readings[0], r.observed_readings[1],
+                    r.observed_readings[2], r.observed_readings[3]);
+        std::printf("[T=%llu||op]=(%.2f,%.2f,%.1f)\n", T,
+                    r.raw_odom.x, r.raw_odom.y, r.raw_odom.theta);
+        std::printf("[T=%llu||re]=(%.2f,%.2f,%.1f)\n", T,
+                    r.raw_estimate.x, r.raw_estimate.y, r.raw_estimate.theta);
+        std::printf("[T=%llu||cp]=(%.2f,%.2f,%.1f)\n", T,
+                    r.chassis_pose.x, r.chassis_pose.y, r.chassis_pose.theta);
+        std::printf("[T=%llu||g]=%d|%s|%.2f/%.2f|r90=%.2f|j=%.2f\n", T,
+                    g.accepted ? 1 : 0, g.reason.c_str(),
+                    g.max_sensor_residual_in, g.residual_threshold_in,
+                    g.radius_90_in, g.jump_in);
         std::fflush(stdout);
     }
 #else
