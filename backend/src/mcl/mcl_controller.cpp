@@ -1,7 +1,5 @@
 #include "mcl/mcl_controller.hpp"
 
-#include <memory>
-
 #include "ray/ray_cast_obstacles.hpp"
 
 #include <algorithm>
@@ -141,13 +139,8 @@ std::string build_compact_tick_message(uint64_t tick,
 MCLController::MCLController(
     const MCLConfig& mcl_config,
     const GateConfig& gate_config,
-    LogFn log_fn,
-    std::shared_ptr<ThrottledWriter> writer)
-    : engine_(mcl_config),
-      gate_config_(gate_config),
-      log_fn_(std::move(log_fn)),
-      // 0 B/s = unlimited (desktop/sim); on hardware pass e.g. std::make_shared<ThrottledWriter>(8192).
-      writer_(writer ? std::move(writer) : std::make_shared<ThrottledWriter>(0)) {
+    LogFn log_fn)
+    : engine_(mcl_config), gate_config_(gate_config), log_fn_(std::move(log_fn)) {
     if (!log_fn_) {
 #ifdef NDEBUG_LOG
         log_fn_ = [](const std::string&) {};
@@ -330,9 +323,8 @@ void MCLController::log_tick_result(const MCLTickResult& result, double heading_
     if (log_interval_ticks_ <= 1
         || result.tick_count % static_cast<uint64_t>(log_interval_ticks_) == 0) {
         const std::string payload = build_compact_tick_message(result.tick_count, result, heading_deg);
-        if (writer_) {
-            writer_->enqueue(payload);
-        }
+        std::fwrite(payload.data(), 1, payload.size(), stdout);
+        std::fflush(stdout);
     }
 #else
     (void)result; (void)heading_deg;

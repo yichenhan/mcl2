@@ -30,8 +30,7 @@ LocalizationController::LocalizationController(const ControllerConfig& config)
       raw_estimate_(config.initial_pose),
       prev_estimate_(config.initial_pose),
       prev_odom_pose_(config.initial_pose),
-      mcl_(std::make_unique<MCLController>(
-          config.mcl_config, config.gate_config, config.log_fn, config.writer)) {
+      mcl_(std::make_unique<MCLController>(config.mcl_config, config.gate_config, config.log_fn)) {
     if (mcl_) {
         mcl_->set_log_interval_ticks(config.log_interval_ticks);
         mcl_->initialize_uniform(config.seed);

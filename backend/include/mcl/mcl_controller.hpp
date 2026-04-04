@@ -1,7 +1,6 @@
 #pragma once
 
 #include "mcl/mcl_engine.hpp"
-#include "mcl/throttled_writer.hpp"
 #include "sim/field.hpp"
 #include "nlohmann/json.hpp"
 
@@ -10,7 +9,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
-#include <memory>
 #include <string>
 #include <vector>
 
@@ -242,8 +240,7 @@ public:
     explicit MCLController(
         const MCLConfig& mcl_config = {},
         const GateConfig& gate_config = {},
-        LogFn log_fn = nullptr,
-        std::shared_ptr<ThrottledWriter> writer = nullptr);
+        LogFn log_fn = nullptr);
 
     void initialize_uniform(uint64_t seed);
     void predict(double delta_forward, double delta_rotation, double heading_deg, double delta_lateral);
@@ -294,7 +291,6 @@ private:
     MCLEngine engine_;
     GateConfig gate_config_;
     LogFn log_fn_;
-    std::shared_ptr<ThrottledWriter> writer_;
     uint64_t tick_count_ = 0;
     int log_interval_ticks_ = 1;
 };

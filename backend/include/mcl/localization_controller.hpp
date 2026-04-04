@@ -2,7 +2,6 @@
 
 #include "distance_localization.hpp"
 #include "mcl/mcl_controller.hpp"
-#include "mcl/throttled_writer.hpp"
 #include "sim/field.hpp"
 
 #include <array>
@@ -42,7 +41,6 @@ struct ControllerConfig {
     GateConfig gate_config{};
     GateEnables gate_enables{};
     MCLController::LogFn log_fn{};
-    std::shared_ptr<ThrottledWriter> writer{};
     uint64_t seed = 42;
 
     // Ray-wall settings
