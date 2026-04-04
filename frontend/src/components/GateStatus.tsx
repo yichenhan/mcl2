@@ -22,6 +22,9 @@ export function GateStatus({ gate }: Props) {
           <div>{mark(!gate.failed_r90)} R90 gate</div>
           <div>{mark(!gate.failed_passability)} Passability gate</div>
           <div>{mark(!gate.failed_residual)} Residual gate</div>
+          <div>{mark(!gate.failed_max_correction)} Max correction gate
+            {gate.correction_distance_in != null ? ` (${gate.correction_distance_in.toFixed(1)} in)` : ""}
+          </div>
           <div className={gate.accepted ? "text-emerald-300" : "text-red-300"}>
             {gate.accepted ? "✅ Accepted" : "❌ Rejected"}
             {gate.reason ? ` (${gate.reason})` : ""}

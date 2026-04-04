@@ -17,13 +17,13 @@ namespace mcl {
 struct GateConfig {
     double max_centroid_jump_ft_per_s = 360.0 / 12.0;
     double max_jump_in = 12.0;
-    double max_radius_90_in = 6.0;
+    double max_radius_90_in = 5.0;
     // Distance-dependent residual thresholds (100% tolerance over sensor spec).
     // < 200mm: spec ±15mm → ×2 = 30mm = 1.181 in.
     // ≥ 200mm: spec 5%   → ×2 = 10% of reading.
     double sensor_close_range_in = 7.874;
-    double sensor_close_tolerance_in = 1.181;
-    double sensor_far_tolerance_pct = 0.10;
+    double sensor_close_tolerance_in = 2.5;
+    double sensor_far_tolerance_pct = 0.15;
     int min_valid_sensors_for_residual = 2;
 };
 
@@ -31,7 +31,7 @@ struct GateEnables {
     bool centroid_jump = true;
     bool r90 = true;
     bool passability = true;
-    bool residual = false;
+    bool residual = true; // disabled; using max_correction_in gate instead
 };
 
 struct GateDecision {

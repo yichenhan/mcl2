@@ -16,7 +16,11 @@ function snapshotFromCluster(cs: MCLClusterStats, nEff: number): MCLSnapshot {
 export function toTickState(raw: unknown): TickState {
   const r = (raw ?? {}) as Partial<TickState>;
   const legacy = raw as Record<string, unknown>;
-  const gateDecision = (r.gate_decision ?? legacy.gate) as TickState["gate_decision"];
+  const gateRaw = (r.gate_decision ?? legacy.gate) as TickState["gate_decision"];
+  const correctionDist = typeof legacy.correction_distance_in === "number" ? legacy.correction_distance_in : undefined;
+  const gateDecision = gateRaw
+    ? { ...gateRaw, correction_distance_in: gateRaw.correction_distance_in ?? correctionDist }
+    : undefined;
   const sensorResiduals = (r.sensor_residuals ?? legacy.mcl_sensor_residuals) as TickState["sensor_residuals"];
   const predictedReadings = (r.mcl_predicted_readings ?? legacy.mcl_predicted_readings) as TickState["mcl_predicted_readings"];
 

@@ -113,7 +113,7 @@ TEST_CASE("pose_gated is false when threshold is very large") {
     CHECK_FALSE(t.pose_gated);
 }
 
-TEST_CASE("default max_radius_90_in is 6") {
+TEST_CASE("default max_radius_90_in is 5") {
     mcl::GateConfig cfg;
-    CHECK(cfg.max_radius_90_in == doctest::Approx(6.0));
+    CHECK(cfg.max_radius_90_in == doctest::Approx(5.0));
 }

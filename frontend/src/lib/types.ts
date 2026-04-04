@@ -117,6 +117,7 @@ export interface GateDecision {
   failed_r90: boolean;
   failed_passability: boolean;
   failed_residual: boolean;
+  failed_max_correction?: boolean;
   jump_in: number;
   radius_90_in: number;
   spread_in: number;
@@ -129,6 +130,7 @@ export interface GateDecision {
   residual_threshold_in?: number;
   centroid_jump_ft_per_s?: number;
   n_eff_at_gate?: number;
+  correction_distance_in?: number;
 }
 
 /** Mirrors backend `state::SessionAnalytics` (replay `analytics` JSON block). */

@@ -93,19 +93,12 @@ export function MetricsPanel({ tick }: Props) {
         {gate && !gate.accepted && gate.reason ? (
           <Row label="Reason" value={gate.reason} className="text-zinc-300" />
         ) : null}
-        {gate && gate.accepted && ts?.chassis_pose && ts?.raw_odom ? (
-          <Row
-            label="Correction"
-            value={fmt(Math.hypot(ts.chassis_pose.x - ts.raw_odom.x, ts.chassis_pose.y - ts.raw_odom.y), 2)}
-            unit="in"
-            className="text-emerald-300"
-          />
-        ) : null}
         {gate ? (
           <>
             <Row label="R90" value={fmt(gate.radius_90_in)} unit="in" className={gate.failed_r90 ? "text-red-400" : "text-zinc-200"} />
             <Row label="Jump" value={fmt(gate.jump_in)} unit="in" className={gate.failed_centroid_jump ? "text-red-400" : "text-zinc-200"} />
             <Row label="Max residual" value={fmt(gate.max_sensor_residual_in)} unit="in" className={gate.failed_residual ? "text-red-400" : "text-zinc-200"} />
+            <Row label="Correction" value={fmt(gate.correction_distance_in, 2)} unit="in" className={gate.failed_max_correction ? "text-red-400" : "text-zinc-200"} />
           </>
         ) : null}
 

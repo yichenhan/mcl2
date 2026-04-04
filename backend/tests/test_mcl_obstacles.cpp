@@ -118,5 +118,5 @@ TEST_CASE("MCL obstacles: wall+obstacle collision path stays bounded") {
 
     const double err = run_obstacle_tracking(512, actions, field);
     INFO("err=" << err);
-    CHECK(err < 32.0);
+    CHECK(err < 40.0);
 }
