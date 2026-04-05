@@ -291,7 +291,6 @@ GateDecision MCLController::gate_estimate(
     {
         int valid_count = 0;
         int fail_count = 0;
-        int hard_fail_count = 0; // reading > predicted — not an obstruction
         double worst_residual = 0.0;
         double worst_threshold = 0.0;
         const auto& sensors = engine_.config().sensors;
@@ -307,11 +306,6 @@ GateDecision MCLController::gate_estimate(
                 : readings[static_cast<size_t>(i)] * gate_config_.sensor_far_tolerance_pct;
             if (residual > max_resid) {
                 fail_count++;
-                // Reading longer than predicted can't be an obstruction
-                // (obstructions shorten readings). Treat as hard failure.
-                if (readings[static_cast<size_t>(i)] > pred) {
-                    hard_fail_count++;
-                }
             }
             if (residual > worst_residual) {
                 worst_residual = residual;
@@ -320,11 +314,8 @@ GateDecision MCLController::gate_estimate(
         }
         d.max_sensor_residual_in = worst_residual;
         d.residual_threshold_in = worst_threshold;
-        const int soft_fails = fail_count - hard_fail_count;
-        const int allowed_soft_outliers = (valid_count >= 3) ? 1 : 0;
         d.would_fail_residual =
-            (hard_fail_count > 0) || (soft_fails > allowed_soft_outliers)
-            || (valid_count < gate_config_.min_valid_sensors_for_residual);
+            (fail_count > 0) || (valid_count < gate_config_.min_valid_sensors_for_residual);
     }
 
     d.would_fail_centroid_jump = (speed_ft_per_s > gate_config_.max_centroid_jump_ft_per_s);

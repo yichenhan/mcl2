@@ -30,7 +30,7 @@ struct MCLConfig {
     double roughening_sigma = 0.3;  // post-resample jitter for convergence and particle diversity
     // Force resampling for a short window after initialize_uniform() to
     // improve global relocalization and re-init convergence.
-    int bootstrap_recovery_ticks = 12;
+    int bootstrap_recovery_ticks = 300;
     // When the average raw weight per particle drops below this threshold,
     // all particles are lost.  Force resampling with higher injection.
     double lost_weight_threshold = 1e-3;

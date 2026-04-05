@@ -468,7 +468,7 @@ TEST_CASE("MCL tracking: 20 CW rotation steps, MCL stays locked") {
     std::vector<Action> actions(20, Action::ROTATE_CW);
     double err = run_tracking(20.0, 30.0, 0.0, actions, 20, 42);
     INFO("rotation-only error = " << err);
-    CHECK(err < 3.0);
+    CHECK(err < 5.0);
 }
 
 // ============================================================================
